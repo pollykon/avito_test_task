@@ -3,6 +3,8 @@ package delete_segment
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	segmentService "github.com/pollykon/avito_test_task/internal/service/segment"
 	"net/http"
 )
 
@@ -26,6 +28,15 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResp
 
 	err := h.segmentService.DeleteSegment(ctx, request.SegmentSlug)
 	if err != nil {
+		if errors.Is(err, segmentService.ErrSegmentNotExist) {
+			return HandlerResponse{
+				Status: http.StatusBadRequest,
+				Error: &HandlerResponseError{
+					Message: "segment doesn't exist",
+				},
+			}
+		}
+
 		h.logger.ErrorContext(ctx, "error while deleting segment", "error", err, "request", request)
 		return HandlerResponse{
 			Status: http.StatusInternalServerError,

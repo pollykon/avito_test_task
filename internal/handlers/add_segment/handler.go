@@ -1,8 +1,10 @@
-package delete_user_from_segment
+package add_segment
 
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	segmentService "github.com/pollykon/avito_test_task/internal/service/segment"
 	"net/http"
 )
 
@@ -16,31 +18,31 @@ func New(s SegmentService, l Logger) Handler {
 }
 
 func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResponse {
-	if request.UserID <= 0 {
+	if request.SegmentSlug == "" {
 		return HandlerResponse{
 			Status: http.StatusBadRequest,
 			Error: &HandlerResponseError{
-				Message: "userId should be more than 0",
+				Message: "slug shouldn't be empty",
 			},
 		}
 	}
 
-	if request.SegmentSlugs == nil {
-		return HandlerResponse{
-			Status: http.StatusBadRequest,
-			Error: &HandlerResponseError{
-				Message: "slugs shouldn't be empty",
-			},
-		}
-	}
-
-	err := h.segmentService.DeleteUserFromSegment(ctx, request.UserID, request.SegmentSlugs)
+	err := h.segmentService.AddSegment(ctx, request.SegmentSlug)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "error while deleting user from segment", "error", err, "request", request)
+		if errors.Is(err, segmentService.ErrSegmentAlreadyExists) {
+			return HandlerResponse{
+				Status: http.StatusBadRequest,
+				Error: &HandlerResponseError{
+					Message: "segment already exists",
+				},
+			}
+		}
+
+		h.logger.ErrorContext(ctx, "error while adding segment", "error", err, "request", request)
 		return HandlerResponse{
 			Status: http.StatusInternalServerError,
 			Error: &HandlerResponseError{
-				Message: "error while deleting user from segment",
+				Message: "error while adding segment",
 			},
 		}
 	}
@@ -55,15 +57,12 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
-	defer func() {
-		_ = r.Body.Close()
-	}()
+	defer func() { _ = r.Body.Close() }()
 
 	var request HandlerRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		h.logger.ErrorContext(r.Context(), "error while parse error: ", "error", err, "request", request)
+		h.logger.ErrorContext(r.Context(), "error while parse request", "error", err, "request", request)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -73,7 +72,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		h.logger.ErrorContext(r.Context(), "error while encoding response", "error", err, "request", request)
+		h.logger.ErrorContext(r.Context(), "error while encoding response: ", "error", err, "request", request)
 		return
 	}
 	return

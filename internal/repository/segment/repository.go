@@ -35,26 +35,27 @@ func (r *Repository) AddSegment(ctx context.Context, slug string) error {
 	return nil
 }
 
-//удаляем несуществующий сегмент (наверное это ок)
-
 func (r *Repository) DeleteSegment(ctx context.Context, slug string) error {
-	_, err := r.db.ExecContext(ctx, `update segment set deleted = true where id = $1`, slug)
+	res, err := r.db.ExecContext(ctx, `update segment set deleted = true where id = $1`, slug)
 	if err != nil {
 		return fmt.Errorf("error while deleting segment: %w", err)
 	}
+
+	numberOfDeletedSegments, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error while getting affected rows: %w", err)
+	}
+
+	if numberOfDeletedSegments == 0 {
+		return ErrSegmentNotExist
+	}
+
 	return nil
 }
-
-// добавление юзера в сегмент когда сегмента нет
-//нужна тут валидация? или её лучше в сервис
 
 func (r *Repository) AddUserToSegment(ctx context.Context, userID int64, slugs []string, ttl *time.Duration) error {
 	if len(slugs) == 0 {
 		return nil
-	}
-
-	if ttl != nil && *ttl < time.Hour {
-		return fmt.Errorf("error ttl less than hour")
 	}
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -73,7 +74,7 @@ func (r *Repository) AddUserToSegment(ctx context.Context, userID int64, slugs [
 	slugsAny := make([]interface{}, 0, len(slugs))
 	for i, slug := range slugs {
 		if ttl != nil {
-			values = append(values, fmt.Sprintf("(%d, $%d, (%d || ' hour')::interval)", userID, i+1, ttl.Hours()))
+			values = append(values, fmt.Sprintf("(%d, $%d, (%d || ' hour')::interval)", userID, i+1, int64(ttl.Hours())))
 		} else {
 			values = append(values, fmt.Sprintf("(%d, $%d)", userID, i+1))
 		}
@@ -101,8 +102,6 @@ func (r *Repository) AddUserToSegment(ctx context.Context, userID int64, slugs [
 
 	return nil
 }
-
-// нужно проверять, что юзер/сегмент сущетсвует? можно использовать rowsAffected
 
 func (r *Repository) DeleteUserFromSegment(ctx context.Context, userID int64, slugs []string) error {
 	if len(slugs) == 0 {

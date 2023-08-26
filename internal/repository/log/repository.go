@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type Log struct {
@@ -39,10 +40,9 @@ func (l *Log) AddLog(ctx context.Context, userID int64, segments []string, opera
 	return nil
 }
 
-// нужно?
-
-func (l *Log) DeleteLog(ctx context.Context, logID int64) error {
-	_, err := l.db.ExecContext(ctx, `delete from log where log_id = $1`, logID)
+func (l *Log) DeleteLogs(ctx context.Context, timestamp time.Time, limit int64) error {
+	query := `delete from log where id in (select id from log where insert_time <= $1 limit $2)`
+	_, err := l.db.ExecContext(ctx, query, timestamp, limit)
 	if err != nil {
 		return fmt.Errorf("error while deleting from log: %w", err)
 	}

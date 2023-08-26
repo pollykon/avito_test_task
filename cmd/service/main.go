@@ -4,21 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	handlerAddSegment "github.com/pollykon/avito_test_task/internal/handlers/add_segment"
+	handlerAddUserToSegment "github.com/pollykon/avito_test_task/internal/handlers/add_user_to_segments"
+	handlerDeleteSegment "github.com/pollykon/avito_test_task/internal/handlers/delete_segment"
+	handlerDeleteUserFromSegment "github.com/pollykon/avito_test_task/internal/handlers/delete_user_from_segment"
+	handlerGetUserActiveSegment "github.com/pollykon/avito_test_task/internal/handlers/get_user_active_segments"
+	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
+	segmentRepository "github.com/pollykon/avito_test_task/internal/repository/segment"
+	serviceSegment "github.com/pollykon/avito_test_task/internal/service/segment"
 	"log/slog"
 	"net/http"
 	"os"
-
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
-
-	handlerAddSegment "github.com/pollykon/avito_test_task/handlers/add_segment"
-	handlerAddUserToSegment "github.com/pollykon/avito_test_task/handlers/add_user_to_segments"
-	handlerDeleteSegment "github.com/pollykon/avito_test_task/handlers/delete_segment"
-	handlerDeleteUserFromSegment "github.com/pollykon/avito_test_task/handlers/delete_user_from_segment"
-	handlerGetUserActiveSegment "github.com/pollykon/avito_test_task/handlers/get_user_active_segments"
-	logRepository "github.com/pollykon/avito_test_task/repository/log"
-	segmentRepository "github.com/pollykon/avito_test_task/repository/segment"
-	serviceSegment "github.com/pollykon/avito_test_task/service/segment"
 )
 
 func main() {

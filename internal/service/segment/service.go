@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
+	segmentRepository "github.com/pollykon/avito_test_task/internal/repository/segment"
 	"time"
-
-	logRepository "github.com/pollykon/avito_test_task/repository/log"
-	segmentRepository "github.com/pollykon/avito_test_task/repository/segment"
 )
 
 type Service struct {
@@ -34,6 +33,9 @@ func (s Service) AddSegment(ctx context.Context, slug string) error {
 func (s Service) DeleteSegment(ctx context.Context, slug string) error {
 	err := s.segmentRepo.DeleteSegment(ctx, slug)
 	if err != nil {
+		if errors.Is(err, segmentRepository.ErrSegmentNotExist) {
+			return ErrSegmentNotExist
+		}
 		return fmt.Errorf("error in service while deleting from segment: %w", err)
 	}
 
