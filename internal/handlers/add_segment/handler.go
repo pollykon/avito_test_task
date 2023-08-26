@@ -4,17 +4,48 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/pollykon/avito_test_task/internal/handlers"
 	segmentService "github.com/pollykon/avito_test_task/internal/service/segment"
+	"log/slog"
 	"net/http"
 )
 
 type Handler struct {
 	segmentService SegmentService
-	logger         Logger
+	logger         *slog.Logger
 }
 
-func New(s SegmentService, l Logger) Handler {
+func New(s SegmentService, l *slog.Logger) Handler {
 	return Handler{segmentService: s, logger: l}
+}
+
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", handlers.ContentTypeJSON)
+	defer func() { _ = r.Body.Close() }()
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	//write message with error
+	var request HandlerRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		h.logger.ErrorContext(r.Context(), "error while parse request", "error", err, "request", request)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	response := h.handle(r.Context(), request)
+	w.WriteHeader(response.Status)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		h.logger.ErrorContext(r.Context(), "error while encoding response: ", "error", err, "request", request)
+		return
+	}
+	return
 }
 
 func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResponse {
@@ -48,32 +79,4 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResp
 	}
 
 	return HandlerResponse{Status: http.StatusOK}
-}
-
-func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	defer func() { _ = r.Body.Close() }()
-
-	var request HandlerRequest
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		h.logger.ErrorContext(r.Context(), "error while parse request", "error", err, "request", request)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	response := h.handle(r.Context(), request)
-	w.WriteHeader(response.Status)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		h.logger.ErrorContext(r.Context(), "error while encoding response: ", "error", err, "request", request)
-		return
-	}
-	return
 }

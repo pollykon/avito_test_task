@@ -3,55 +3,33 @@ package get_user_active_segments
 import (
 	"context"
 	"encoding/json"
+	"github.com/pollykon/avito_test_task/internal/handlers"
+	"log/slog"
 	"net/http"
 )
 
 type Handler struct {
 	segmentService SegmentService
-	logger         Logger
+	logger         *slog.Logger
 }
 
-func New(s SegmentService, l Logger) Handler {
+func New(s SegmentService, l *slog.Logger) Handler {
 	return Handler{segmentService: s, logger: l}
 }
 
-func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResponse {
-	if request.UserID <= 0 {
-		return HandlerResponse{
-			Status: http.StatusBadRequest,
-			Error: &HandlerResponseError{
-				Message: "userId should be more than 0",
-			},
-		}
-	}
-	
-	activeSegments, err := h.segmentService.GetUserActiveSegments(ctx, request.UserID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "error while getting active segment", "error", err, "request", request)
-		return HandlerResponse{
-			Status: http.StatusInternalServerError,
-			Error: &HandlerResponseError{
-				Message: "error while getting active segment",
-			},
-			Response: activeSegments,
-		}
-	}
-	return HandlerResponse{Status: http.StatusOK}
-}
-
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", handlers.ContentTypeJSON)
+
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	var request HandlerRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "error while parsing request: ", "error", err, "request", request)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
@@ -64,4 +42,28 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	return
+}
+
+func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResponse {
+	if request.UserID <= 0 {
+		return HandlerResponse{
+			Status: http.StatusBadRequest,
+			Error: &HandlerResponseError{
+				Message: "userId should be more than 0",
+			},
+		}
+	}
+
+	activeSegments, err := h.segmentService.GetUserActiveSegments(ctx, request.UserID)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "error while getting active segment", "error", err, "request", request)
+		return HandlerResponse{
+			Status: http.StatusInternalServerError,
+			Error: &HandlerResponseError{
+				Message: "error while getting active segment",
+			},
+		}
+	}
+
+	return HandlerResponse{Status: http.StatusOK, Segments: activeSegments}
 }

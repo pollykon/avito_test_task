@@ -7,7 +7,7 @@ type HandlerRequest struct {
 type HandlerResponse struct {
 	Status   int                   `json:"status"`
 	Error    *HandlerResponseError `json:"error,omitempty"`
-	Response []string              `json:"response"`
+	Segments []string              `json:"segments"`
 }
 
 type HandlerResponseError struct {

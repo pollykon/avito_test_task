@@ -1,3 +1,4 @@
+//go:generate mockery --all --output ./mocks --case underscore --with-expecter
 package segment
 
 import (
@@ -5,7 +6,7 @@ import (
 	"time"
 )
 
-type SegmentRepositoryInterface interface {
+type SegmentRepository interface {
 	AddSegment(ctx context.Context, slug string) error
 	DeleteSegment(ctx context.Context, slug string) error
 	AddUserToSegment(ctx context.Context, userID int64, slugs []string, ttl *time.Duration) error
@@ -13,6 +14,6 @@ type SegmentRepositoryInterface interface {
 	GetUserActiveSegments(ctx context.Context, userID int64) ([]string, error)
 }
 
-type LogRepositoryInterface interface {
+type LogRepository interface {
 	AddLog(ctx context.Context, userID int64, segment []string, operation string) error
 }

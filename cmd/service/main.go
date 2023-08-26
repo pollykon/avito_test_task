@@ -19,6 +19,8 @@ import (
 	"os"
 )
 
+const servicePort = "1101"
+
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -70,15 +72,22 @@ func main() {
 
 	segmentGetUserActiveSegments := handlerGetUserActiveSegment.New(segmentService, logger)
 
-	http.Handle("/add_segment", &segmentAddHandler)
-	http.Handle("/delete_segment", &segmentDeleteHandler)
-	http.Handle("/add_user_to_segments", &segmentAddUserToSegment)
-	http.Handle("/delete_user_from_segment", &segmentDeleteUserFromSegment)
-	http.Handle("/get_user_active_segments", &segmentGetUserActiveSegments)
+	mux := http.NewServeMux()
 
-	err = http.ListenAndServe(":1101", http.DefaultServeMux)
+	mux.Handle("/add_segment", &segmentAddHandler)
+	mux.Handle("/delete_segment", &segmentDeleteHandler)
+	mux.Handle("/add_user_to_segments", &segmentAddUserToSegment)
+	mux.Handle("/delete_user_from_segment", &segmentDeleteUserFromSegment)
+	mux.Handle("/get_user_active_segments", &segmentGetUserActiveSegments)
+
+	logger.InfoContext(context.Background(), "service started", "port", servicePort)
+	server := http.Server{
+		Addr:    ":" + servicePort,
+		Handler: mux,
+	}
+	err = server.ListenAndServe()
 	if err != nil {
-		logger.ErrorContext(context.Background(), "error listening service", "error", err)
+		logger.ErrorContext(context.Background(), "error listening", "error", err)
 		return
 	}
 }

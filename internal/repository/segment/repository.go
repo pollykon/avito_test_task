@@ -141,6 +141,8 @@ func (r *Repository) GetUserActiveSegments(ctx context.Context, userID int64) ([
 		return nil, fmt.Errorf("error while getting active user's segments: %w", err)
 	}
 
+	defer func() { _ = rows.Close() }()
+
 	var segments []string
 	for rows.Next() {
 		var segment string

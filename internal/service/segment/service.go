@@ -10,11 +10,11 @@ import (
 )
 
 type Service struct {
-	logRepo     LogRepositoryInterface
-	segmentRepo SegmentRepositoryInterface
+	logRepo     LogRepository
+	segmentRepo SegmentRepository
 }
 
-func New(logRepo LogRepositoryInterface, segmentRepo SegmentRepositoryInterface) Service {
+func New(logRepo LogRepository, segmentRepo SegmentRepository) Service {
 	return Service{logRepo: logRepo, segmentRepo: segmentRepo}
 }
 
