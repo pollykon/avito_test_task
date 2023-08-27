@@ -22,7 +22,7 @@ func (_m *LogRepository) EXPECT() *LogRepository_Expecter {
 }
 
 // AddLog provides a mock function with given fields: ctx, userID, _a2, operation
-func (_m *LogRepository) AddLog(ctx context.Context, userID int64, _a2 []string, operation string) error {
+func (_m *LogRepository) Add(ctx context.Context, userID int64, _a2 []string, operation string) error {
 	ret := _m.Called(ctx, userID, _a2, operation)
 
 	var r0 error
@@ -35,7 +35,7 @@ func (_m *LogRepository) AddLog(ctx context.Context, userID int64, _a2 []string,
 	return r0
 }
 
-// LogRepository_AddLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'AddLog'
+// LogRepository_AddLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Add'
 type LogRepository_AddLog_Call struct {
 	*mock.Call
 }
@@ -46,7 +46,7 @@ type LogRepository_AddLog_Call struct {
 //   - _a2 []string
 //   - operation string
 func (_e *LogRepository_Expecter) AddLog(ctx interface{}, userID interface{}, _a2 interface{}, operation interface{}) *LogRepository_AddLog_Call {
-	return &LogRepository_AddLog_Call{Call: _e.mock.On("AddLog", ctx, userID, _a2, operation)}
+	return &LogRepository_AddLog_Call{Call: _e.mock.On("Add", ctx, userID, _a2, operation)}
 }
 
 func (_c *LogRepository_AddLog_Call) Run(run func(ctx context.Context, userID int64, _a2 []string, operation string)) *LogRepository_AddLog_Call {

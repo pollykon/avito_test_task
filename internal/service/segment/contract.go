@@ -15,5 +15,5 @@ type SegmentRepository interface {
 }
 
 type LogRepository interface {
-	AddLog(ctx context.Context, userID int64, segment []string, operation string) error
+	Add(ctx context.Context, userID int64, segment []string, operation string) error
 }

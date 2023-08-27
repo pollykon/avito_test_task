@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
 	segmentRepository "github.com/pollykon/avito_test_task/internal/repository/segment"
-	"time"
 )
 
 type Service struct {
@@ -48,7 +49,7 @@ func (s Service) AddUserToSegment(ctx context.Context, userID int64, slugs []str
 		return fmt.Errorf("error in service while adding user to segment: %w", err)
 	}
 
-	err = s.logRepo.AddLog(ctx, userID, slugs, logRepository.OperationTypeAdd)
+	err = s.logRepo.Add(ctx, userID, slugs, logRepository.OperationTypeAdd)
 	if err != nil {
 		return fmt.Errorf("error in service while adding log: %w", err)
 	}
@@ -62,7 +63,7 @@ func (s Service) DeleteUserFromSegment(ctx context.Context, userID int64, slugs 
 		return fmt.Errorf("error in service while deleting user from segment: %w", err)
 	}
 
-	err = s.logRepo.AddLog(ctx, userID, slugs, logRepository.OperationTypeDelete)
+	err = s.logRepo.Add(ctx, userID, slugs, logRepository.OperationTypeDelete)
 	if err != nil {
 		return fmt.Errorf("error in service while adding log: %w", err)
 	}

@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-type Log struct {
+type Repository struct {
 	db *sql.DB
 }
 
-func New(db *sql.DB) *Log {
-	return &Log{
+func New(db *sql.DB) *Repository {
+	return &Repository{
 		db: db,
 	}
 }
 
-func (l *Log) AddLog(ctx context.Context, userID int64, segments []string, operation string) error {
+func (l *Repository) Add(ctx context.Context, userID int64, segments []string, operation string) error {
 	if len(segments) == 0 {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (l *Log) AddLog(ctx context.Context, userID int64, segments []string, opera
 	return nil
 }
 
-func (l *Log) DeleteLogs(ctx context.Context, timestamp time.Time, limit int64) error {
+func (l *Repository) Delete(ctx context.Context, timestamp time.Time, limit int64) error {
 	query := `delete from log where id in (select id from log where insert_time <= $1 limit $2)`
 	_, err := l.db.ExecContext(ctx, query, timestamp, limit)
 	if err != nil {
@@ -48,4 +48,32 @@ func (l *Log) DeleteLogs(ctx context.Context, timestamp time.Time, limit int64) 
 	}
 
 	return nil
+}
+
+func (l *Repository) Get(ctx context.Context, userID int64, from time.Time, to time.Time) ([]Log, error) {
+	query := `select id, user_id, segment_id, operation, insert_time from log
+                  where user_id = $1 
+				  and insert_time >= $2
+				  and insert_time < $3`
+
+	rows, err := l.db.QueryContext(ctx, query, userID, from, to)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting logs: %w", err)
+	}
+
+	defer func() { _ = rows.Close() }()
+
+	var logs []Log
+	for rows.Next() {
+		var log = Log{}
+
+		err = rows.Scan(&log.ID, &log.UserID, &log.SegmentID, &log.Operation, &log.InsertTime)
+		if err != nil {
+			return nil, fmt.Errorf("error while scanning rows: %w", err)
+		}
+
+		logs = append(logs, log)
+	}
+
+	return logs, nil
 }
