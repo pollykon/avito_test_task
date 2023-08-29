@@ -21,7 +21,7 @@ func (_m *LogRepository) EXPECT() *LogRepository_Expecter {
 	return &LogRepository_Expecter{mock: &_m.Mock}
 }
 
-// AddLog provides a mock function with given fields: ctx, userID, _a2, operation
+// Add provides a mock function with given fields: ctx, userID, _a2, operation
 func (_m *LogRepository) Add(ctx context.Context, userID int64, _a2 []string, operation string) error {
 	ret := _m.Called(ctx, userID, _a2, operation)
 
@@ -35,33 +35,33 @@ func (_m *LogRepository) Add(ctx context.Context, userID int64, _a2 []string, op
 	return r0
 }
 
-// LogRepository_AddLog_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Add'
-type LogRepository_AddLog_Call struct {
+// LogRepository_Add_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Add'
+type LogRepository_Add_Call struct {
 	*mock.Call
 }
 
-// AddLog is a helper method to define mock.On call
+// Add is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID int64
 //   - _a2 []string
 //   - operation string
-func (_e *LogRepository_Expecter) AddLog(ctx interface{}, userID interface{}, _a2 interface{}, operation interface{}) *LogRepository_AddLog_Call {
-	return &LogRepository_AddLog_Call{Call: _e.mock.On("Add", ctx, userID, _a2, operation)}
+func (_e *LogRepository_Expecter) Add(ctx interface{}, userID interface{}, _a2 interface{}, operation interface{}) *LogRepository_Add_Call {
+	return &LogRepository_Add_Call{Call: _e.mock.On("Add", ctx, userID, _a2, operation)}
 }
 
-func (_c *LogRepository_AddLog_Call) Run(run func(ctx context.Context, userID int64, _a2 []string, operation string)) *LogRepository_AddLog_Call {
+func (_c *LogRepository_Add_Call) Run(run func(ctx context.Context, userID int64, _a2 []string, operation string)) *LogRepository_Add_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run(args[0].(context.Context), args[1].(int64), args[2].([]string), args[3].(string))
 	})
 	return _c
 }
 
-func (_c *LogRepository_AddLog_Call) Return(_a0 error) *LogRepository_AddLog_Call {
+func (_c *LogRepository_Add_Call) Return(_a0 error) *LogRepository_Add_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *LogRepository_AddLog_Call) RunAndReturn(run func(context.Context, int64, []string, string) error) *LogRepository_AddLog_Call {
+func (_c *LogRepository_Add_Call) RunAndReturn(run func(context.Context, int64, []string, string) error) *LogRepository_Add_Call {
 	_c.Call.Return(run)
 	return _c
 }

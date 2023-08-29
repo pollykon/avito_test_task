@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 
+	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
 	segmentRepository "github.com/pollykon/avito_test_task/internal/repository/segment"
 	"github.com/pollykon/avito_test_task/internal/service/segment/mocks"
 )
@@ -190,7 +190,7 @@ func TestService_AddUserToSegment_Success(t *testing.T) {
 		Return(nil)
 
 	logRepoMock := mocks.NewLogRepository(t)
-	logRepoMock.EXPECT().AddLog(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeAdd).Return(nil)
+	logRepoMock.EXPECT().Add(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeAdd).Return(nil)
 
 	service := New(logRepoMock, segmentRepoMock)
 
@@ -243,7 +243,7 @@ func TestService_AddUserToSegment_Error(t *testing.T) {
 					Return(nil)
 			},
 			buildLogRepoMock: func(repo *mocks.LogRepository) {
-				repo.EXPECT().AddLog(context.Background(), int64(2), []string{"AVITO"}, logRepository.OperationTypeAdd).
+				repo.EXPECT().Add(context.Background(), int64(2), []string{"AVITO"}, logRepository.OperationTypeAdd).
 					Return(expectedErrorFromRepo)
 			},
 
@@ -286,7 +286,7 @@ func TestService_DeleteUserFromSegments_Success(t *testing.T) {
 		Return(nil)
 
 	logRepoMock := mocks.NewLogRepository(t)
-	logRepoMock.EXPECT().AddLog(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeDelete).Return(nil)
+	logRepoMock.EXPECT().Add(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeDelete).Return(nil)
 
 	service := New(logRepoMock, segmentRepoMock)
 
@@ -334,7 +334,7 @@ func TestService_DeleteUserFromSegments_Error(t *testing.T) {
 					Return(nil)
 			},
 			buildLogRepoMock: func(repo *mocks.LogRepository) {
-				repo.EXPECT().AddLog(context.Background(), int64(2), []string{"AVITO"}, logRepository.OperationTypeDelete).
+				repo.EXPECT().Add(context.Background(), int64(2), []string{"AVITO"}, logRepository.OperationTypeDelete).
 					Return(expectedErrorFromRepo)
 			},
 

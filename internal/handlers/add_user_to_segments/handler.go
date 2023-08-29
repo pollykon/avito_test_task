@@ -23,6 +23,12 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
+		_ = json.NewEncoder(w).Encode(HandlerResponse{
+			Status: http.StatusMethodNotAllowed,
+			Error: &HandlerResponseError{
+				Message: handlers.ErrMsgMethodNotAllowed,
+			},
+		})
 		return
 	}
 
@@ -33,17 +39,18 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.ErrorContext(r.Context(), "error while parse request", "error", err, "request", request)
 		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(HandlerResponse{
+			Status: http.StatusBadRequest,
+			Error: &HandlerResponseError{
+				Message: handlers.ErrMsgBadRequest,
+			},
+		})
 		return
 	}
 
 	response := h.handle(r.Context(), request)
 	w.WriteHeader(response.Status)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		h.logger.ErrorContext(r.Context(), "error while encoding response", "error", err, "request", request)
-		return
-	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResponse {
@@ -85,7 +92,7 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResp
 		return HandlerResponse{
 			Status: http.StatusInternalServerError,
 			Error: &HandlerResponseError{
-				Message: "error while adding user to segment",
+				Message: handlers.ErrMsgInternal,
 			},
 		}
 	}

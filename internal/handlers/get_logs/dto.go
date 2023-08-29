@@ -10,7 +10,7 @@ type HandlerRequest struct {
 type HandlerResponse struct {
 	Status int                   `json:"status"`
 	Error  *HandlerResponseError `json:"error,omitempty"`
-	URI    string                `json:"uri,omitempty"`
+	URL    string                `json:"url,omitempty"`
 }
 
 type HandlerResponseError struct {

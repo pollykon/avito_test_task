@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
+	"hash/fnv"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -128,15 +130,24 @@ func (r *Repository) DeleteUserFromSegment(ctx context.Context, userID int64, sl
 	return nil
 }
 
+// wrap in transaction
+
 func (r *Repository) GetUserActiveSegments(ctx context.Context, userID int64) ([]string, error) {
+	hashProcessor := fnv.New32a()
+	_, _ = hashProcessor.Write([]byte(strconv.FormatInt(userID, 10)))
+	hashedUserID := hashProcessor.Sum32()
+
+	participationUserSign := int64(hashedUserID % 100)
+
 	query := `select id as segment_id from segment
- 				inner join user_segment userseg on userseg.segment_id = segment.id
-				where deleted = false 
-				  and userseg.user_id = $1 
+ 				left join user_segment userseg on userseg.segment_id = segment.id
+				where segment.deleted = false
+				  and (userseg.user_id = $1 or segment.percent >= $2)
 				  and (
-				      userseg.ttl is null or now() < (userseg.insertDate + userseg.ttl)
-				  )`
-	rows, err := r.db.QueryContext(ctx, query, userID)
+				      userseg.ttl is null or now() < (userseg.insert_time + userseg.ttl)
+				  )
+`
+	rows, err := r.db.QueryContext(ctx, query, userID, participationUserSign)
 	if err != nil {
 		return nil, fmt.Errorf("error while getting active user's segments: %w", err)
 	}

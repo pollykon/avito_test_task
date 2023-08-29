@@ -84,16 +84,16 @@ func main() {
 
 	segmentGetUserActiveSegments := handlerGetUserActiveSegment.New(segmentService, logger)
 
-	logGetLogsHandler := handlerGetLogs.New(logService, logger, staticURIPrefix)
+	logGetLogsHandler := handlerGetLogs.New(logService, staticURIPrefix, logger)
 
 	mux := http.NewServeMux()
 
-	mux.Handle("/add_segment", segmentAddHandler)
-	mux.Handle("/delete_segment", segmentDeleteHandler)
-	mux.Handle("/add_user_to_segments", segmentAddUserToSegment)
-	mux.Handle("/delete_user_from_segment", segmentDeleteUserFromSegment)
-	mux.Handle("/get_user_active_segments", segmentGetUserActiveSegments)
-	mux.Handle("/get_user_logs", logGetLogsHandler)
+	mux.Handle("/add_segment_v1", segmentAddHandler)
+	mux.Handle("/delete_segment_v1", segmentDeleteHandler)
+	mux.Handle("/add_user_to_segments_v1", segmentAddUserToSegment)
+	mux.Handle("/delete_user_from_segment_v1", segmentDeleteUserFromSegment)
+	mux.Handle("/get_user_active_segments_v1", segmentGetUserActiveSegments)
+	mux.Handle("/get_user_logs_v1", logGetLogsHandler)
 
 	staticHandler := http.StripPrefix(staticURIPrefix, http.FileServer(http.Dir(logCSVDirectory)))
 	mux.Handle(staticURIPrefix+"/", staticHandler)

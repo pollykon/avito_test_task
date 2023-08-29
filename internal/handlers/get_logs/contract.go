@@ -1,3 +1,4 @@
+//go:generate mockery --all --output ./mocks --case underscore --with-expecter
 package get_logs
 
 import (
@@ -8,5 +9,4 @@ import (
 
 type LogService interface {
 	GenerateCSV(ctx context.Context, request serviceLog.GetCSVRequest) (string, error)
-	GetCSV(ctx context.Context, name string) (string, error)
 }

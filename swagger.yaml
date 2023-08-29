@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  version: 1.0.0
+  title: Swagger Segment service
+components:
+  schemas:
+    responseWithStatusOk:
+      type: object
+      properties:
+        status:
+          type: integer
+      example:
+        status: 200
+    responseWithStatusInternal:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+      example:
+        status: 500
+        message: "unexpected error"
+    responseWithStatusBadRequest:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+      example:
+        status: 400
+        message: "bad request"
+
+paths:
+  /add_segment:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - slug
+              properties:
+                slug:
+                  type: string
+                  description: Segment name
+              example:
+                slug: "AVITO_VOICE_MESSAGES"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusOk'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusBadRequest'
+        500:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusInternal'
+  /delete_segment:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - slug
+              properties:
+                slug:
+                  type: string
+                  description: Segment name
+              example:
+                slug: "AVITO_VOICE_MESSAGES"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusOk'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusBadRequest'
+        500:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusInternal'
+  /add_user_to_segments:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - slugs
+              properties:
+                userId:
+                  type: integer
+                slugs:
+                  type: array
+                  items:
+                    type: string
+                  description: Segment name
+                ttl:
+                  type: integer
+                  description: Ttl in hour (optional)
+              example:
+                userId: 10
+                slugs: ["AVITO_VOICE_MESSAGES"]
+                ttl: 2
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusOk'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusBadRequest'
+        500:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusInternal'
+  /delete_user_from_segment:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - slugs
+              properties:
+                userId:
+                  type: integer
+                slugs:
+                  type: array
+                  items:
+                    type: string
+              example:
+                userId: 10
+                slugs: ["AVITO_VOICE_MESSAGES"]
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusOk'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusBadRequest'
+        500:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusInternal'
+  /get_user_active_segments:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: integer
+              example:
+                userId: 10
+      responses:
+        '200':
+          description: User active segments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slugs:
+                    type: array
+                    items:
+                      type: string
+                example:
+                  slugs: ["AVITO_VOICE_MESSAGES"]
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusBadRequest'
+        500:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusInternal'
+  /get_user_logs:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - from
+                - to
+              properties:
+                userId:
+                  type: integer
+                to:
+                  type: string
+                  description: To (in RFC3339)
+                from:
+                  type: string
+                  description: From (in RFC3339)
+                separator:
+                  type: string
+                  description: Preferred separator "," or ";"
+              example:
+                userId: 10
+                from: "2023-08-26T14:11:29+02:00"
+                to: "2023-08-27T14:11:29+02:00"
+                separator: ","
+      responses:
+        '200':
+          description: URL with generated csv logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                example:
+                  url: "http://localhost:8080/static/file_name.csv"
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusBadRequest'
+        500:
+          description: OK
+          content:
+            application/json:
+              schema:
+                "$ref": '#/components/schemas/responseWithStatusInternal'

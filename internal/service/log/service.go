@@ -17,8 +17,6 @@ func New(logRepo LogRepository, csvRepo CSVRepository) Service {
 	return Service{logRepo: logRepo, csvRepo: csvRepo}
 }
 
-//метод для сохранения csv файла
-
 func (s Service) GenerateCSV(ctx context.Context, request GetCSVRequest) (string, error) {
 	logs, err := s.logRepo.Get(ctx, request.UserID, request.From, request.To)
 	if err != nil {

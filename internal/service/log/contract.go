@@ -1,3 +1,4 @@
+//go:generate mockery --all --output ./mocks --case underscore --with-expecter
 package log
 
 import (
