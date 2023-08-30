@@ -8,5 +8,4 @@ RUN go mod verify
 
 COPY . .
 RUN go build -o service ./cmd/service
-
-CMD ["./service"]
+RUN go build -o crons ./cmd/crons/data_deleter

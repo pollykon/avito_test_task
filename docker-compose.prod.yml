@@ -1,7 +1,7 @@
 version: "3"
 services:
   postgres:
-    image: postgres
+    image: postgres:15.4
     environment:
       POSTGRES_HOST: ${PG_HOST}
       POSTGRES_USER: ${PG_USER}
@@ -18,6 +18,28 @@ services:
       - postgres
     ports:
       - "1101:1101"
+    command: ./service
+    environment:
+      PG_USER: ${PG_USER}
+      PG_PASSWORD: ${PG_PASSWORD}
+      PG_DATABASE_NAME: ${PG_DATABASE_NAME}
+      PG_HOST: postgres
+      PG_PORT: ${PG_PORT}
+
+      LOGS_CSV_DIRECTORY: ${LOGS_CSV_DIRECTORY}
+
+      TIME_INTERVAL_DELETE_SEGMENTS: ${TIME_INTERVAL_DELETE_SEGMENTS}
+      TIME_INTERVAL_DELETE_TTL_SEGMENTS: ${TIME_INTERVAL_DELETE_TTL_SEGMENTS}
+      TIME_INTERVAL_DELETE_LOGS: ${TIME_INTERVAL_DELETE_LOGS}
+
+      BATCH_SIZE_SEGMENTS: ${BATCH_SIZE_SEGMENTS}
+      BATCH_SIZE_TTL_SEGMENTS: ${BATCH_SIZE_TTL_SEGMENTS}
+      BATCH_SIZE_LOGS: ${BATCH_SIZE_LOGS}
+  crons:
+    build: ./
+    depends_on:
+      - postgres
+    command: ./crons
     environment:
       PG_USER: ${PG_USER}
       PG_PASSWORD: ${PG_PASSWORD}
