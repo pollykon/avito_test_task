@@ -20,8 +20,9 @@ import (
 
 func TestSegmentHandler_AddSegment_Success(t *testing.T) {
 	sentSlug := "AVITO"
+	sentPercent := int64(10)
 
-	jsonBodyRequest, _ := json.Marshal(map[string]string{"slug": sentSlug})
+	jsonBodyRequest, _ := json.Marshal(map[string]interface{}{"slug": sentSlug, "percent": sentPercent})
 	request, err := http.NewRequest(http.MethodPost, "", strings.NewReader(string(jsonBodyRequest)))
 	if err != nil {
 		t.Fatalf("error while sending request: %s", err)
@@ -30,7 +31,7 @@ func TestSegmentHandler_AddSegment_Success(t *testing.T) {
 	w := httptest.NewRecorder()
 	segmentServiceMock := mocks.NewSegmentService(t)
 
-	segmentServiceMock.EXPECT().AddSegment(context.Background(), sentSlug).Return(nil)
+	segmentServiceMock.EXPECT().AddSegment(context.Background(), sentSlug, &sentPercent).Return(nil)
 
 	handler := New(segmentServiceMock, slog.New(logger.NewNoopHandler()))
 	handler.ServeHTTP(w, request)
@@ -49,11 +50,14 @@ func TestSegmentHandler_AddSegment_Success(t *testing.T) {
 }
 
 func TestSegmentHandler_AddSegment_Error(t *testing.T) {
+	sentPercent := int64(10)
+
 	tt := []struct {
 		name string
 
 		requestMethod string
 		sentSlug      interface{}
+		sentPercent   *int64
 
 		buildSegmentServiceMock func(service *mocks.SegmentService)
 
@@ -65,6 +69,7 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 
 			requestMethod: http.MethodGet,
 			sentSlug:      nil,
+			sentPercent:   nil,
 
 			buildSegmentServiceMock: nil,
 
@@ -76,6 +81,7 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 
 			requestMethod: http.MethodPost,
 			sentSlug:      0,
+			sentPercent:   nil,
 
 			buildSegmentServiceMock: nil,
 
@@ -87,6 +93,7 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 
 			requestMethod: http.MethodPost,
 			sentSlug:      "",
+			sentPercent:   nil,
 
 			buildSegmentServiceMock: nil,
 
@@ -103,9 +110,10 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 
 			requestMethod: http.MethodPost,
 			sentSlug:      "AVITO",
+			sentPercent:   &sentPercent,
 
 			buildSegmentServiceMock: func(service *mocks.SegmentService) {
-				service.EXPECT().AddSegment(context.Background(), "AVITO").
+				service.EXPECT().AddSegment(context.Background(), "AVITO", &sentPercent).
 					Return(segmentService.ErrSegmentAlreadyExists)
 			},
 
@@ -122,9 +130,10 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 
 			requestMethod: http.MethodPost,
 			sentSlug:      "AVITO",
+			sentPercent:   &sentPercent,
 
 			buildSegmentServiceMock: func(service *mocks.SegmentService) {
-				service.EXPECT().AddSegment(context.Background(), "AVITO").
+				service.EXPECT().AddSegment(context.Background(), "AVITO", &sentPercent).
 					Return(fmt.Errorf("error from service"))
 			},
 
@@ -132,7 +141,7 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusInternalServerError,
 				Error: &HandlerResponseError{
-					Message: "error while adding segment",
+					Message: handlers.ErrMsgInternal,
 				},
 			},
 		},
@@ -140,7 +149,7 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			jsonBodyRequest, _ := json.Marshal(map[string]interface{}{"slug": tc.sentSlug})
+			jsonBodyRequest, _ := json.Marshal(map[string]interface{}{"slug": tc.sentSlug, "percent": tc.sentPercent})
 			request, err := http.NewRequest(tc.requestMethod, "", strings.NewReader(string(jsonBodyRequest)))
 			if err != nil {
 				t.Fatalf("error while sending request: %s", err)

@@ -21,13 +21,13 @@ func (_m *SegmentService) EXPECT() *SegmentService_Expecter {
 	return &SegmentService_Expecter{mock: &_m.Mock}
 }
 
-// AddSegment provides a mock function with given fields: ctx, slug
-func (_m *SegmentService) AddSegment(ctx context.Context, slug string) error {
-	ret := _m.Called(ctx, slug)
+// AddSegment provides a mock function with given fields: ctx, slug, percent
+func (_m *SegmentService) AddSegment(ctx context.Context, slug string, percent *int64) error {
+	ret := _m.Called(ctx, slug, percent)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, slug)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *int64) error); ok {
+		r0 = rf(ctx, slug, percent)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -43,13 +43,14 @@ type SegmentService_AddSegment_Call struct {
 // AddSegment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - slug string
-func (_e *SegmentService_Expecter) AddSegment(ctx interface{}, slug interface{}) *SegmentService_AddSegment_Call {
-	return &SegmentService_AddSegment_Call{Call: _e.mock.On("AddSegment", ctx, slug)}
+//   - percent *int64
+func (_e *SegmentService_Expecter) AddSegment(ctx interface{}, slug interface{}, percent interface{}) *SegmentService_AddSegment_Call {
+	return &SegmentService_AddSegment_Call{Call: _e.mock.On("AddSegment", ctx, slug, percent)}
 }
 
-func (_c *SegmentService_AddSegment_Call) Run(run func(ctx context.Context, slug string)) *SegmentService_AddSegment_Call {
+func (_c *SegmentService_AddSegment_Call) Run(run func(ctx context.Context, slug string, percent *int64)) *SegmentService_AddSegment_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(*int64))
 	})
 	return _c
 }
@@ -59,7 +60,7 @@ func (_c *SegmentService_AddSegment_Call) Return(_a0 error) *SegmentService_AddS
 	return _c
 }
 
-func (_c *SegmentService_AddSegment_Call) RunAndReturn(run func(context.Context, string) error) *SegmentService_AddSegment_Call {
+func (_c *SegmentService_AddSegment_Call) RunAndReturn(run func(context.Context, string, *int64) error) *SegmentService_AddSegment_Call {
 	_c.Call.Return(run)
 	return _c
 }

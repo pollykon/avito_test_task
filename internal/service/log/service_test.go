@@ -13,17 +13,19 @@ import (
 )
 
 func TestLogService_GenerateCSV_Success(t *testing.T) {
-	fromRFC3339, _ := time.Parse(time.RFC3339, "2023-08-26T14:11:29+02:00")
-	toRFC3339, _ := time.Parse(time.RFC3339, "2023-08-27T14:11:29+02:00")
+	sentFrom := "2023-08"
+	sentTo := "2023-09"
+	parsedFrom, _ := time.Parse("2006-01", sentFrom)
+	parsedTo, _ := time.Parse("2006-01", sentTo)
 
 	sentRequest := GetCSVRequest{
 		UserID:    13,
-		From:      fromRFC3339,
-		To:        toRFC3339,
+		From:      parsedFrom,
+		To:        parsedTo,
 		Separator: ",",
 	}
 
-	sentCSV := "logId,userId,segmentId,operation,insertTime\n1,12,AVITO,add,2023-08-26T14:11:29+02:00"
+	sentCSV := "logId,userId,segmentId,operation,insertTime\n1,12,AVITO,add,2023-08-01T00:00:00Z"
 
 	expectedLogs := []logRepo.Log{
 		{
@@ -31,7 +33,7 @@ func TestLogService_GenerateCSV_Success(t *testing.T) {
 			UserID:     int64(12),
 			SegmentID:  "AVITO",
 			Operation:  logRepo.OperationTypeAdd,
-			InsertTime: fromRFC3339,
+			InsertTime: parsedFrom,
 		},
 	}
 
@@ -53,15 +55,15 @@ func TestLogService_GenerateCSV_Success(t *testing.T) {
 }
 
 func TestLogService_GenerateCSV_Error(t *testing.T) {
-	fromRFC3339, _ := time.Parse(time.RFC3339, "2023-08-26T14:11:29+02:00")
-	toRFC3339, _ := time.Parse(time.RFC3339, "2023-08-27T14:11:29+02:00")
+	parsedFrom, _ := time.Parse("2006-01", "2023-08")
+	parsedTo, _ := time.Parse("2006-01", "2023-09")
 	sentRequest := GetCSVRequest{
 		UserID:    13,
-		From:      fromRFC3339,
-		To:        toRFC3339,
+		From:      parsedFrom,
+		To:        parsedTo,
 		Separator: ",",
 	}
-	sentCSV := "logId,userId,segmentId,operation,insertTime\n1,12,AVITO,add,2023-08-26T14:11:29+02:00"
+	sentCSV := "logId,userId,segmentId,operation,insertTime\n1,12,AVITO,add,2023-08-01T00:00:00Z"
 
 	errFromLogRepo := fmt.Errorf("error from log repo")
 	errFromCSVRepo := fmt.Errorf("error from csv repo")
@@ -72,7 +74,7 @@ func TestLogService_GenerateCSV_Error(t *testing.T) {
 			UserID:     int64(12),
 			SegmentID:  "AVITO",
 			Operation:  logRepo.OperationTypeAdd,
-			InsertTime: fromRFC3339,
+			InsertTime: parsedFrom,
 		},
 	}
 

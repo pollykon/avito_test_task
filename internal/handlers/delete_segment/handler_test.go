@@ -132,7 +132,7 @@ func TestSegmentHandler_DeleteSegment_Error(t *testing.T) {
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusInternalServerError,
 				Error: &HandlerResponseError{
-					Message: "error while deleting segment",
+					Message: handlers.ErrMsgInternal,
 				},
 			},
 		},

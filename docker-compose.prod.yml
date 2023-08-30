@@ -1,0 +1,38 @@
+version: "3"
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_HOST: ${PG_HOST}
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE_NAME}
+    ports:
+      - "${PG_PORT}:5432"
+    volumes:
+      - database-volume:/var/lib/postgresql/data
+  microservice:
+    build: ./
+    stop_signal: SIGINT
+    depends_on:
+      - postgres
+    ports:
+      - "1101:1101"
+    environment:
+      PG_USER: ${PG_USER}
+      PG_PASSWORD: ${PG_PASSWORD}
+      PG_DATABASE_NAME: ${PG_DATABASE_NAME}
+      PG_HOST: postgres
+      PG_PORT: ${PG_PORT}
+
+      LOGS_CSV_DIRECTORY: ${LOGS_CSV_DIRECTORY}
+
+      TIME_INTERVAL_DELETE_SEGMENTS: ${TIME_INTERVAL_DELETE_SEGMENTS}
+      TIME_INTERVAL_DELETE_TTL_SEGMENTS: ${TIME_INTERVAL_DELETE_TTL_SEGMENTS}
+      TIME_INTERVAL_DELETE_LOGS: ${TIME_INTERVAL_DELETE_LOGS}
+
+      BATCH_SIZE_SEGMENTS: ${BATCH_SIZE_SEGMENTS}
+      BATCH_SIZE_TTL_SEGMENTS: ${BATCH_SIZE_TTL_SEGMENTS}
+      BATCH_SIZE_LOGS_MINUTES: ${BATCH_SIZE_LOGS_MINUTES}
+volumes:
+  database-volume:

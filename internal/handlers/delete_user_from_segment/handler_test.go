@@ -17,8 +17,6 @@ import (
 	"github.com/pollykon/avito_test_task/internal/logger"
 )
 
-//массив из пустых строк????
-
 func TestSegmentHandler_DeleteUserFromSegment_Success(t *testing.T) {
 	sentSlugs := []string{"AVITO"}
 	sentUserID := 2
@@ -137,7 +135,7 @@ func TestSegmentHandler_DeleteUserFromSegment_Error(t *testing.T) {
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusInternalServerError,
 				Error: &HandlerResponseError{
-					Message: "error while deleting user from segment",
+					Message: handlers.ErrMsgInternal,
 				},
 			},
 		},

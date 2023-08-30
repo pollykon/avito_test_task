@@ -78,13 +78,23 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest, host string
 		}
 	}
 
-	fromTimeRFC, errFrom := time.Parse(time.RFC3339, request.From)
-	toTimeRFC, errTo := time.Parse(time.RFC3339, request.To)
+	parsedFrom, errFrom := time.Parse("2006-01", request.From)
+	parsedTo, errTo := time.Parse("2006-01", request.To)
 	if errFrom != nil || errTo != nil {
 		return HandlerResponse{
 			Status: http.StatusBadRequest,
 			Error: &HandlerResponseError{
-				Message: "time must be in RFC3339",
+				Message: "time must be in year-month format",
+			},
+			URL: "",
+		}
+	}
+
+	if parsedTo.Equal(parsedFrom) || parsedFrom.After(parsedTo) {
+		return HandlerResponse{
+			Status: http.StatusBadRequest,
+			Error: &HandlerResponseError{
+				Message: "from must be less than to",
 			},
 			URL: "",
 		}
@@ -98,8 +108,8 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest, host string
 
 	logServiceRequest := logService.GetCSVRequest{
 		UserID:    request.UserID,
-		From:      fromTimeRFC,
-		To:        toTimeRFC,
+		From:      parsedFrom,
+		To:        parsedTo,
 		Separator: requestSeparator,
 	}
 

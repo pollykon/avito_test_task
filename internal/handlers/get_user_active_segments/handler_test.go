@@ -125,7 +125,7 @@ func TestSegmentHandler_GetUserActiveSegments_Error(t *testing.T) {
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusInternalServerError,
 				Error: &HandlerResponseError{
-					Message: "error while getting active segment",
+					Message: handlers.ErrMsgInternal,
 				},
 			},
 		},

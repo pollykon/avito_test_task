@@ -2,17 +2,18 @@ package log
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/pollykon/avito_test_task/internal/storage"
 )
 
 type Repository struct {
-	db *sql.DB
+	db storage.Database
 }
 
-func New(db *sql.DB) *Repository {
+func New(db storage.Database) *Repository {
 	return &Repository{
 		db: db,
 	}
@@ -31,7 +32,7 @@ func (l *Repository) Add(ctx context.Context, userID int64, segments []string, o
 		queryArgs = append(queryArgs, segment)
 	}
 
-	query := fmt.Sprintf(`insert into "log" (user_id, segment_id, operation) values %s`, strings.Join(values, ","))
+	query := fmt.Sprintf(`insert into log (user_id, segment_id, operation) values %s`, strings.Join(values, ","))
 	_, err := l.db.ExecContext(ctx, query, queryArgs...)
 	if err != nil {
 		return fmt.Errorf("error while inserting into log: %w", err)
@@ -40,9 +41,9 @@ func (l *Repository) Add(ctx context.Context, userID int64, segments []string, o
 	return nil
 }
 
-func (l *Repository) Delete(ctx context.Context, timestamp time.Time, limit int64) error {
-	query := `delete from log where id in (select id from log where insert_time <= $1 limit $2)`
-	_, err := l.db.ExecContext(ctx, query, timestamp, limit)
+func (l *Repository) Delete(ctx context.Context, limit int64) error {
+	query := `delete from log where id in (select id from log where insert_time + interval '3 months' > now() limit $1)`
+	_, err := l.db.ExecContext(ctx, query, limit)
 	if err != nil {
 		return fmt.Errorf("error while deleting from log: %w", err)
 	}

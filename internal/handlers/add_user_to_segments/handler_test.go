@@ -170,7 +170,7 @@ func TestSegmentHandler_AddUserToSegment_Error(t *testing.T) {
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusInternalServerError,
 				Error: &HandlerResponseError{
-					Message: "error while adding user to segment",
+					Message: handlers.ErrMsgInternal,
 				},
 			},
 		},

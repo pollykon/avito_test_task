@@ -19,8 +19,8 @@ func New(logRepo LogRepository, segmentRepo SegmentRepository) Service {
 	return Service{logRepo: logRepo, segmentRepo: segmentRepo}
 }
 
-func (s Service) AddSegment(ctx context.Context, slug string) error {
-	err := s.segmentRepo.AddSegment(ctx, slug)
+func (s Service) AddSegment(ctx context.Context, slug string, percent *int64) error {
+	err := s.segmentRepo.AddSegment(ctx, slug, percent)
 	if err != nil {
 		if errors.Is(err, segmentRepository.ErrSegmentAlreadyExists) {
 			return ErrSegmentAlreadyExists
@@ -44,28 +44,42 @@ func (s Service) DeleteSegment(ctx context.Context, slug string) error {
 }
 
 func (s Service) AddUserToSegment(ctx context.Context, userID int64, slugs []string, ttl *time.Duration) error {
-	err := s.segmentRepo.AddUserToSegment(ctx, userID, slugs, ttl)
-	if err != nil {
-		return fmt.Errorf("error in service while adding user to segment: %w", err)
-	}
+	err := s.segmentRepo.InTransaction(ctx, func(ctx context.Context) error {
+		err := s.segmentRepo.AddUserToSegment(ctx, userID, slugs, ttl)
+		if err != nil {
+			return fmt.Errorf("error in service while adding user to segment: %w", err)
+		}
 
-	err = s.logRepo.Add(ctx, userID, slugs, logRepository.OperationTypeAdd)
+		err = s.logRepo.Add(ctx, userID, slugs, logRepository.OperationTypeAdd)
+		if err != nil {
+			return fmt.Errorf("error in service while adding log: %w", err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("error in service while adding log: %w", err)
+		return fmt.Errorf("error in trasaction: %w", err)
 	}
 
 	return nil
 }
 
 func (s Service) DeleteUserFromSegment(ctx context.Context, userID int64, slugs []string) error {
-	err := s.segmentRepo.DeleteUserFromSegment(ctx, userID, slugs)
-	if err != nil {
-		return fmt.Errorf("error in service while deleting user from segment: %w", err)
-	}
+	err := s.segmentRepo.InTransaction(ctx, func(ctx context.Context) error {
+		err := s.segmentRepo.DeleteUserFromSegment(ctx, userID, slugs)
+		if err != nil {
+			return fmt.Errorf("error in service while deleting user from segment: %w", err)
+		}
 
-	err = s.logRepo.Add(ctx, userID, slugs, logRepository.OperationTypeDelete)
+		err = s.logRepo.Add(ctx, userID, slugs, logRepository.OperationTypeDelete)
+		if err != nil {
+			return fmt.Errorf("error in service while adding log: %w", err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("error in service while adding log: %w", err)
+		return fmt.Errorf("error in transaction: %w", err)
 	}
 
 	return nil

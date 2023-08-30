@@ -62,8 +62,16 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResp
 			},
 		}
 	}
+	if request.SegmentPercent != nil && (*request.SegmentPercent < 0 || *request.SegmentPercent > 100) {
+		return HandlerResponse{
+			Status: http.StatusBadRequest,
+			Error: &HandlerResponseError{
+				Message: "percent should be more than 0 and less than 100",
+			},
+		}
+	}
 
-	err := h.segmentService.AddSegment(ctx, request.SegmentSlug)
+	err := h.segmentService.AddSegment(ctx, request.SegmentSlug, request.SegmentPercent)
 	if err != nil {
 		if errors.Is(err, segmentService.ErrSegmentAlreadyExists) {
 			return HandlerResponse{

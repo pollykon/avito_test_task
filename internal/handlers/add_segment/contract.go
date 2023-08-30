@@ -4,5 +4,5 @@ package add_segment
 import "context"
 
 type SegmentService interface {
-	AddSegment(ctx context.Context, slug string) error
+	AddSegment(ctx context.Context, slug string, percent *int64) error
 }

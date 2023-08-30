@@ -25,21 +25,23 @@ const (
 
 func TestLogHandler_GetLogs_Success(t *testing.T) {
 	sentUserID := 13
-	fromRFC3339, _ := time.Parse(time.RFC3339, "2023-08-26T14:11:29+02:00")
-	toRFC3339, _ := time.Parse(time.RFC3339, "2023-08-27T14:11:29+02:00")
+	sentFrom := "2023-08"
+	sentTo := "2023-09"
+	parsedFrom, _ := time.Parse("2006-01", sentFrom)
+	parsedTo, _ := time.Parse("2006-01", sentTo)
 	separator := ","
 
 	sentRequest := logService.GetCSVRequest{
 		UserID:    13,
-		From:      fromRFC3339,
-		To:        toRFC3339,
+		From:      parsedFrom,
+		To:        parsedTo,
 		Separator: ",",
 	}
 
 	jsonBodyRequest, _ := json.Marshal(map[string]interface{}{
 		"userId":    sentUserID,
-		"from":      fromRFC3339,
-		"to":        toRFC3339,
+		"from":      sentFrom,
+		"to":        sentTo,
 		"separator": separator,
 	})
 	request, err := http.NewRequest(
@@ -77,14 +79,16 @@ func TestLogHandler_GetLogs_Success(t *testing.T) {
 
 func TestLogHandler_GetLogs_Error(t *testing.T) {
 	sentUserID := 13
-	fromRFC3339, _ := time.Parse(time.RFC3339, "2023-08-26T14:11:29+02:00")
-	toRFC3339, _ := time.Parse(time.RFC3339, "2023-08-27T14:11:29+02:00")
+	sentFrom := "2023-08"
+	sentTo := "2023-09"
+	parsedFrom, _ := time.Parse("2006-01", sentFrom)
+	parsedTo, _ := time.Parse("2006-01", sentTo)
 	separator := ","
 
 	sentRequest := logService.GetCSVRequest{
 		UserID:    13,
-		From:      fromRFC3339,
-		To:        toRFC3339,
+		From:      parsedFrom,
+		To:        parsedTo,
 		Separator: separator,
 	}
 
@@ -96,7 +100,7 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 		sentMethod    string
 		sentUserID    interface{}
 		sentFrom      interface{}
-		sentTo        *time.Time
+		sentTo        string
 		sentSeparator string
 
 		buildLogServiceMock func(mock *mocks.LogService)
@@ -110,7 +114,7 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 			sentMethod:    http.MethodGet,
 			sentUserID:    0,
 			sentFrom:      nil,
-			sentTo:        nil,
+			sentTo:        "",
 			sentSeparator: "",
 
 			buildLogServiceMock: nil,
@@ -123,8 +127,8 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 
 			sentMethod:    http.MethodPost,
 			sentUserID:    "0",
-			sentFrom:      &fromRFC3339,
-			sentTo:        &toRFC3339,
+			sentFrom:      &sentFrom,
+			sentTo:        sentTo,
 			sentSeparator: separator,
 
 			buildLogServiceMock: nil,
@@ -137,8 +141,8 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 
 			sentMethod:    http.MethodPost,
 			sentUserID:    -1,
-			sentFrom:      &fromRFC3339,
-			sentTo:        &toRFC3339,
+			sentFrom:      &sentFrom,
+			sentTo:        sentTo,
 			sentSeparator: separator,
 
 			buildLogServiceMock: nil,
@@ -152,7 +156,21 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 			sentMethod:    http.MethodPost,
 			sentUserID:    sentUserID,
 			sentFrom:      &wrongSentFrom,
-			sentTo:        &toRFC3339,
+			sentTo:        sentTo,
+			sentSeparator: separator,
+
+			buildLogServiceMock: nil,
+
+			expectedStatusCode: http.StatusBadRequest,
+			expectedResponse:   nil,
+		},
+		{
+			name: "from_equal_or_after_to",
+
+			sentMethod:    http.MethodPost,
+			sentUserID:    sentUserID,
+			sentFrom:      &sentTo,
+			sentTo:        sentTo,
 			sentSeparator: separator,
 
 			buildLogServiceMock: nil,
@@ -165,8 +183,8 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 
 			sentMethod:    http.MethodPost,
 			sentUserID:    sentUserID,
-			sentFrom:      &fromRFC3339,
-			sentTo:        &toRFC3339,
+			sentFrom:      &sentFrom,
+			sentTo:        sentTo,
 			sentSeparator: separator,
 
 			buildLogServiceMock: func(repo *mocks.LogService) {
@@ -194,8 +212,6 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error while sending request: %s", err)
 			}
-
-			//expectedURI := tc.expectedResponse.URL
 
 			w := httptest.NewRecorder()
 			logServiceMock := mocks.NewLogService(t)

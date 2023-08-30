@@ -23,13 +23,13 @@ func (_m *SegmentRepository) EXPECT() *SegmentRepository_Expecter {
 	return &SegmentRepository_Expecter{mock: &_m.Mock}
 }
 
-// AddSegment provides a mock function with given fields: ctx, slug
-func (_m *SegmentRepository) AddSegment(ctx context.Context, slug string) error {
-	ret := _m.Called(ctx, slug)
+// AddSegment provides a mock function with given fields: ctx, slug, percent
+func (_m *SegmentRepository) AddSegment(ctx context.Context, slug string, percent *int64) error {
+	ret := _m.Called(ctx, slug, percent)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, slug)
+	if rf, ok := ret.Get(0).(func(context.Context, string, *int64) error); ok {
+		r0 = rf(ctx, slug, percent)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -45,13 +45,14 @@ type SegmentRepository_AddSegment_Call struct {
 // AddSegment is a helper method to define mock.On call
 //   - ctx context.Context
 //   - slug string
-func (_e *SegmentRepository_Expecter) AddSegment(ctx interface{}, slug interface{}) *SegmentRepository_AddSegment_Call {
-	return &SegmentRepository_AddSegment_Call{Call: _e.mock.On("AddSegment", ctx, slug)}
+//   - percent *int64
+func (_e *SegmentRepository_Expecter) AddSegment(ctx interface{}, slug interface{}, percent interface{}) *SegmentRepository_AddSegment_Call {
+	return &SegmentRepository_AddSegment_Call{Call: _e.mock.On("AddSegment", ctx, slug, percent)}
 }
 
-func (_c *SegmentRepository_AddSegment_Call) Run(run func(ctx context.Context, slug string)) *SegmentRepository_AddSegment_Call {
+func (_c *SegmentRepository_AddSegment_Call) Run(run func(ctx context.Context, slug string, percent *int64)) *SegmentRepository_AddSegment_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(string))
+		run(args[0].(context.Context), args[1].(string), args[2].(*int64))
 	})
 	return _c
 }
@@ -61,7 +62,7 @@ func (_c *SegmentRepository_AddSegment_Call) Return(_a0 error) *SegmentRepositor
 	return _c
 }
 
-func (_c *SegmentRepository_AddSegment_Call) RunAndReturn(run func(context.Context, string) error) *SegmentRepository_AddSegment_Call {
+func (_c *SegmentRepository_AddSegment_Call) RunAndReturn(run func(context.Context, string, *int64) error) *SegmentRepository_AddSegment_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -249,6 +250,49 @@ func (_c *SegmentRepository_GetUserActiveSegments_Call) Return(_a0 []string, _a1
 }
 
 func (_c *SegmentRepository_GetUserActiveSegments_Call) RunAndReturn(run func(context.Context, int64) ([]string, error)) *SegmentRepository_GetUserActiveSegments_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// InTransaction provides a mock function with given fields: ctx, f
+func (_m *SegmentRepository) InTransaction(ctx context.Context, f func(context.Context) error) error {
+	ret := _m.Called(ctx, f)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, func(context.Context) error) error); ok {
+		r0 = rf(ctx, f)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SegmentRepository_InTransaction_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'InTransaction'
+type SegmentRepository_InTransaction_Call struct {
+	*mock.Call
+}
+
+// InTransaction is a helper method to define mock.On call
+//   - ctx context.Context
+//   - f func(context.Context) error
+func (_e *SegmentRepository_Expecter) InTransaction(ctx interface{}, f interface{}) *SegmentRepository_InTransaction_Call {
+	return &SegmentRepository_InTransaction_Call{Call: _e.mock.On("InTransaction", ctx, f)}
+}
+
+func (_c *SegmentRepository_InTransaction_Call) Run(run func(ctx context.Context, f func(context.Context) error)) *SegmentRepository_InTransaction_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(func(context.Context) error))
+	})
+	return _c
+}
+
+func (_c *SegmentRepository_InTransaction_Call) Return(_a0 error) *SegmentRepository_InTransaction_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *SegmentRepository_InTransaction_Call) RunAndReturn(run func(context.Context, func(context.Context) error) error) *SegmentRepository_InTransaction_Call {
 	_c.Call.Return(run)
 	return _c
 }

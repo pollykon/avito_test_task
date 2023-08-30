@@ -5,6 +5,8 @@ import (
 	"log/slog"
 )
 
+// Slogger which does nothing (for tests)
+
 type NoopHandler struct{}
 
 func NewNoopHandler() slog.Handler {

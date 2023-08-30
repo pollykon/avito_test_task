@@ -3,10 +3,14 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/pollykon/avito_test_task/cmd"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -22,6 +26,7 @@ import (
 	segmentRepository "github.com/pollykon/avito_test_task/internal/repository/segment"
 	serviceLog "github.com/pollykon/avito_test_task/internal/service/log"
 	serviceSegment "github.com/pollykon/avito_test_task/internal/service/segment"
+	"github.com/pollykon/avito_test_task/internal/storage"
 )
 
 const (
@@ -34,24 +39,23 @@ func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		logger.ErrorContext(context.Background(), "fail to load .env", "error", err)
+		panic(err)
 	}
 
-	databaseHost := os.Getenv("PG_HOST")
-	databasePort := os.Getenv("PG_PORT")
-	databaseUser := os.Getenv("PG_USER")
-	databasePassword := os.Getenv("PG_PASSWORD")
-	databaseName := os.Getenv("PG_DATABASE_NAME")
+	config, err := cmd.Load()
+	if err != nil {
+		panic(err)
+	}
 
-	logCSVDirectory := os.Getenv("LOGS_CSV_DIRECTORY")
+	logCSVDirectory := config.CSV.LogCSVDirectory
 
 	dsn := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		databaseHost,
-		databasePort,
-		databaseUser,
-		databasePassword,
-		databaseName,
+		config.Database.Host,
+		config.Database.Port,
+		config.Database.User,
+		config.Database.Password,
+		config.Database.Name,
 	)
 
 	db, err := sql.Open("postgres", dsn)
@@ -67,8 +71,10 @@ func main() {
 		return
 	}
 
-	segmentRepo := segmentRepository.New(db)
-	logRepo := logRepository.New(db)
+	database := storage.New(db)
+
+	segmentRepo := segmentRepository.New(database)
+	logRepo := logRepository.New(database)
 	csvRepo := csvRepository.New(logCSVDirectory)
 
 	segmentService := serviceSegment.New(logRepo, segmentRepo)
@@ -98,14 +104,29 @@ func main() {
 	staticHandler := http.StripPrefix(staticURIPrefix, http.FileServer(http.Dir(logCSVDirectory)))
 	mux.Handle(staticURIPrefix+"/", staticHandler)
 
-	logger.InfoContext(context.Background(), "service started", "port", servicePort)
 	server := http.Server{
 		Addr:    ":" + servicePort,
 		Handler: mux,
 	}
-	err = server.ListenAndServe()
+
+	go func() {
+		logger.InfoContext(context.Background(), "service started", "port", servicePort)
+		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.ErrorContext(context.Background(), "error while starting server", "error", err)
+		}
+	}()
+
+	// graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	logger.InfoContext(context.Background(), "shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = server.Shutdown(ctx)
 	if err != nil {
-		logger.ErrorContext(context.Background(), "error listening", "error", err)
-		return
+		logger.ErrorContext(context.Background(), "error while shutting down", "error", err)
 	}
 }

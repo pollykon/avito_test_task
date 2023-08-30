@@ -17,6 +17,8 @@ func New(folderPath string) Repository {
 
 const extensionCSV = ".csv"
 
+// Save creates csv file which stores logs in csv format and returns filename with saved logs
+
 func (r Repository) Save(csv string) (string, error) {
 	fileName := uuid.New().String() + extensionCSV
 	filePath := path.Join(r.folderPath, fileName)

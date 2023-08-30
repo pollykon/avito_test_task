@@ -1,7 +1,8 @@
 package add_segment
 
 type HandlerRequest struct {
-	SegmentSlug string `json:"slug"`
+	SegmentSlug    string `json:"slug"`
+	SegmentPercent *int64 `json:"percent"`
 }
 
 type HandlerResponse struct {
