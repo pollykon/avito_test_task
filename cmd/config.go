@@ -32,7 +32,7 @@ type CronTimeIntervalConfig struct {
 type DeleteBatchSizeConfig struct {
 	Segments    int64 `env:"BATCH_SIZE_SEGMENTS,required"`
 	TTLSegments int64 `env:"BATCH_SIZE_TTL_SEGMENTS,required"`
-	Logs        int64 `env:"BATCH_SIZE_LOGS_MINUTES,required"`
+	Logs        int64 `env:"BATCH_SIZE_LOGS,required"`
 }
 
 func Load() (*Config, error) {
