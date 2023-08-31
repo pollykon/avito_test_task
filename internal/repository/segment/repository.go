@@ -101,7 +101,7 @@ func (r *Repository) AddUserToSegment(ctx context.Context, userID int64, slugs [
 	})
 
 	if err != nil {
-		return fmt.Errorf("error while beddining transaction: %w", err)
+		return fmt.Errorf("error while beginning transaction: %w", err)
 	}
 
 	return nil

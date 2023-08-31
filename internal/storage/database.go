@@ -57,7 +57,6 @@ func (db *Database) WithTransaction(ctx context.Context, f func(ctx context.Cont
 
 // extractTx checks if there is transaction in context. If transaction in context, it returns transaction struct to
 // perform operation in transactions
-
 func extractTx(ctx context.Context) *sql.Tx {
 	if tx, ok := ctx.Value(txKey).(*sql.Tx); ok {
 		return tx

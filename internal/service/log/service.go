@@ -20,7 +20,7 @@ func New(logRepo LogRepository, csvRepo CSVRepository) Service {
 func (s Service) GenerateCSV(ctx context.Context, request GetCSVRequest) (string, error) {
 	logs, err := s.logRepo.Get(ctx, request.UserID, request.From, request.To)
 	if err != nil {
-		return "", fmt.Errorf("error while getting logs: %w", err)
+		return "", fmt.Errorf("error from log service while getting logs: %w", err)
 	}
 
 	var csv []string
@@ -42,7 +42,7 @@ func (s Service) GenerateCSV(ctx context.Context, request GetCSVRequest) (string
 
 	URI, err := s.csvRepo.Save(strings.Join(csv, "\n"))
 	if err != nil {
-		return "", fmt.Errorf("error while saving csv: %w", err)
+		return "", fmt.Errorf("error from log service while saving csv: %w", err)
 	}
 
 	return URI, nil
