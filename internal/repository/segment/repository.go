@@ -142,14 +142,13 @@ func (r *Repository) DeleteUserFromSegment(ctx context.Context, userID int64, sl
 func (r *Repository) GetUserActiveSegments(ctx context.Context, userID int64, userHash int64) (UserSegments, error) {
 	participationUserSign := userHash % 100
 
-	query := `select
-			  case when userseg.user_id is not null then segment.id end as active_segment,
-			  case when userseg.user_id is null then segment.id end as new_segment
-			  from segment
-			  left join user_segment userseg on userseg.segment_id = segment.id
-			  where segment.deleted = false
-				and (userseg.user_id = $1 or segment.percent >= $2)
-				and (userseg.ttl is null or now() < (userseg.insert_time + userseg.ttl))`
+	query := `select segment.id AS segment_id,
+				   case when userseg.user_id = $1 then userseg.user_id end as user_id
+			from segment
+			left join user_segment userseg on userseg.segment_id = segment.id and userseg.user_id = $1
+			where segment.deleted = false
+			  and (userseg.user_id = $1 or segment.percent >= $2 and userseg.user_id is null)
+			  and (userseg.ttl is null or NOW() < (userseg.insert_time + userseg.ttl))`
 
 	rows, err := r.db.QueryContext(ctx, query, userID, participationUserSign)
 	if err != nil {
@@ -162,19 +161,18 @@ func (r *Repository) GetUserActiveSegments(ctx context.Context, userID int64, us
 	var newSegments []string
 
 	for rows.Next() {
-		var nullableActiveSegment sql.NullString
-		var nullableNewSegment sql.NullString
+		var segment string
+		var nullableUserID sql.NullString
 
-		err = rows.Scan(&nullableActiveSegment, &nullableNewSegment)
+		err = rows.Scan(&segment, &nullableUserID)
 		if err != nil {
 			return UserSegments{}, fmt.Errorf("error while scanning segments: %w", err)
 		}
 
-		if nullableActiveSegment.Valid {
-			activeSegments = append(activeSegments, nullableActiveSegment.String)
-		}
-		if nullableNewSegment.Valid {
-			newSegments = append(newSegments, nullableNewSegment.String)
+		if nullableUserID.Valid {
+			activeSegments = append(activeSegments, segment)
+		} else {
+			newSegments = append(newSegments, segment)
 		}
 	}
 
