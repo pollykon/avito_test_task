@@ -1,4 +1,3 @@
-.env
 .idea
 ./logs_csv/*
 !/logs_csv/.gitkeep
