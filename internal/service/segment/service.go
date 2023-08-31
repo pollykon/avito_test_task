@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
+	"strconv"
 	"time"
 
 	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
@@ -47,6 +49,9 @@ func (s Service) AddUserToSegment(ctx context.Context, userID int64, slugs []str
 	err := s.segmentRepo.InTransaction(ctx, func(ctx context.Context) error {
 		err := s.segmentRepo.AddUserToSegment(ctx, userID, slugs, ttl)
 		if err != nil {
+			if errors.Is(err, segmentRepository.ErrUserAlreadyInSegment) {
+				return ErrUserAlreadyInSegment
+			}
 			return fmt.Errorf("error from segment service while adding user to segment: %w", err)
 		}
 
@@ -86,10 +91,31 @@ func (s Service) DeleteUserFromSegment(ctx context.Context, userID int64, slugs 
 }
 
 func (s Service) GetUserActiveSegments(ctx context.Context, userID int64) ([]string, error) {
-	segments, err := s.segmentRepo.GetUserActiveSegments(ctx, userID)
+	var activeSegments []string
+	err := s.segmentRepo.InTransaction(ctx, func(ctx context.Context) error {
+		hashProcessor := fnv.New32a()
+		_, _ = hashProcessor.Write([]byte(strconv.FormatInt(userID, 10)))
+		userHash := int64(hashProcessor.Sum32())
+
+		segments, err := s.segmentRepo.GetUserActiveSegments(ctx, userID, userHash)
+		if err != nil {
+			return fmt.Errorf("error from segment service while getting user's segments: %w", err)
+		}
+
+		if len(segments.NewSegments) != 0 {
+			err = s.AddUserToSegment(ctx, userID, segments.NewSegments, nil)
+			if err != nil {
+				return fmt.Errorf("error from segment service while adding percent segments: %w", err)
+			}
+		}
+
+		activeSegments = append(segments.ActiveSegments, segments.NewSegments...)
+
+		return nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error from segment service while getting user's segments: %w", err)
+		return nil, fmt.Errorf("error from segment service in transaction: %w", err)
 	}
 
-	return segments, nil
+	return activeSegments, nil
 }

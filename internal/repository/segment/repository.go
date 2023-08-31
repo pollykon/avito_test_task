@@ -2,11 +2,10 @@ package segment
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/lib/pq"
-	"hash/fnv"
-	"strconv"
 	"strings"
 	"time"
 
@@ -95,6 +94,10 @@ func (r *Repository) AddUserToSegment(ctx context.Context, userID int64, slugs [
 
 		_, err = r.db.ExecContext(ctx, query, slugsAny...)
 		if err != nil {
+			var pqErr *pq.Error
+			if errors.As(err, &pqErr) && pqErr.Code == errCodeUniqueViolation {
+				return ErrUserAlreadyInSegment
+			}
 			return fmt.Errorf("error while inserting into user_segment: %w", err)
 		}
 		return nil
@@ -136,40 +139,46 @@ func (r *Repository) DeleteUserFromSegment(ctx context.Context, userID int64, sl
 // 1. were added to user and weren't deleted
 // 2. were added with ttl, and they are still actual
 // 3. were added to user by counting segment's percent
-func (r *Repository) GetUserActiveSegments(ctx context.Context, userID int64) ([]string, error) {
-	hashProcessor := fnv.New32a()
-	_, _ = hashProcessor.Write([]byte(strconv.FormatInt(userID, 10)))
-	hashedUserID := hashProcessor.Sum32()
+func (r *Repository) GetUserActiveSegments(ctx context.Context, userID int64, userHash int64) (UserSegments, error) {
+	participationUserSign := userHash % 100
 
-	participationUserSign := int64(hashedUserID % 100)
+	query := `select
+			  case when userseg.user_id is not null then segment.id end as active_segment,
+			  case when userseg.user_id is null then segment.id end as new_segment
+			  from segment
+			  left join user_segment userseg on userseg.segment_id = segment.id
+			  where segment.deleted = false
+				and (userseg.user_id = $1 or segment.percent >= $2)
+				and (userseg.ttl is null or now() < (userseg.insert_time + userseg.ttl))`
 
-	query := `select segment.id as segment_id from segment
- 				left join user_segment userseg on userseg.segment_id = segment.id
-				where segment.deleted = false
-				  and (userseg.user_id = $1 or segment.percent >= $2)
-				  and (
-				      userseg.ttl is null or now() < (userseg.insert_time + userseg.ttl)
-				  )`
 	rows, err := r.db.QueryContext(ctx, query, userID, participationUserSign)
 	if err != nil {
-		return nil, fmt.Errorf("error while getting active user's segments: %w", err)
+		return UserSegments{}, fmt.Errorf("error while getting active user's segments: %w", err)
 	}
 
 	defer func() { _ = rows.Close() }()
 
-	var segments []string
-	for rows.Next() {
-		var segment string
+	var activeSegments []string
+	var newSegments []string
 
-		err = rows.Scan(&segment)
+	for rows.Next() {
+		var nullableActiveSegment sql.NullString
+		var nullableNewSegment sql.NullString
+
+		err = rows.Scan(&nullableActiveSegment, &nullableNewSegment)
 		if err != nil {
-			return nil, fmt.Errorf("error while scanning segments: %w", err)
+			return UserSegments{}, fmt.Errorf("error while scanning segments: %w", err)
 		}
 
-		segments = append(segments, segment)
+		if nullableActiveSegment.Valid {
+			activeSegments = append(activeSegments, nullableActiveSegment.String)
+		}
+		if nullableNewSegment.Valid {
+			newSegments = append(newSegments, nullableNewSegment.String)
+		}
 	}
 
-	return segments, nil
+	return UserSegments{ActiveSegments: activeSegments, NewSegments: newSegments}, nil
 }
 
 func (r *Repository) InTransaction(ctx context.Context, f func(ctx context.Context) error) error {

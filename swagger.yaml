@@ -149,7 +149,7 @@ paths:
             application/json:
               schema:
                 "$ref": '#/components/schemas/responseWithStatusInternal'
-  /delete_user_from_segment_v1:
+  /delete_user_from_segments_v1:
     post:
       requestBody:
         content:

@@ -2,13 +2,14 @@ package segment
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/stretchr/testify/mock"
+	"hash/fnv"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	logRepository "github.com/pollykon/avito_test_task/internal/repository/log"
 	segmentRepository "github.com/pollykon/avito_test_task/internal/repository/segment"
@@ -17,35 +18,156 @@ import (
 
 func TestService_GetUserActiveSegments_Success(t *testing.T) {
 	sentUserID := int64(10)
-	expectedSegments := []string{"AVITO_VOICE_MESSAGES", "AVITO_DISCOUNT_50"}
+	hashProcessor := fnv.New32a()
+	_, _ = hashProcessor.Write([]byte(strconv.FormatInt(sentUserID, 10)))
+	userHash := int64(hashProcessor.Sum32())
+	expectedSegments := segmentRepository.UserSegments{
+		NewSegments:    []string{"AVITO_VOICE_MESSAGES"},
+		ActiveSegments: []string{"AVITO_DISCOUNT_50"},
+	}
 
 	segmentRepoMock := mocks.NewSegmentRepository(t)
+	logRepoMock := mocks.NewLogRepository(t)
+
+	segmentRepoMock.EXPECT().InTransaction(context.Background(), mock.Anything).
+		Run(func(ctx context.Context, f func(context.Context) error) {
+			assert.NoError(t, f(ctx))
+		}).Return(nil)
+
 	segmentRepoMock.EXPECT().
-		GetUserActiveSegments(context.Background(), sentUserID).
+		GetUserActiveSegments(context.Background(), sentUserID, userHash).
 		Return(expectedSegments, nil)
 
-	service := New(mocks.NewLogRepository(t), segmentRepoMock)
+	segmentRepoMock.EXPECT().
+		AddUserToSegment(context.Background(), sentUserID, expectedSegments.NewSegments, (*time.Duration)(nil)).
+		Return(nil)
+
+	logRepoMock.EXPECT().
+		Add(context.Background(), sentUserID, expectedSegments.NewSegments, logRepository.OperationTypeAdd).
+		Return(nil)
+
+	service := New(logRepoMock, segmentRepoMock)
 
 	currentSegments, err := service.GetUserActiveSegments(context.Background(), sentUserID)
 
+	expectedActiveSegments := append(expectedSegments.ActiveSegments, expectedSegments.NewSegments...)
+
 	assert.NoError(t, err)
-	assert.Equal(t, expectedSegments, currentSegments)
+	assert.Equal(t, expectedActiveSegments, currentSegments)
 }
 
 func TestService_GetUserActiveSegments_Error(t *testing.T) {
 	sentUserID := int64(10)
-	expectedErrorFromRepository := errors.New("error from repository")
+	hashProcessor := fnv.New32a()
+	_, _ = hashProcessor.Write([]byte(strconv.FormatInt(sentUserID, 10)))
+	sentUserHash := int64(hashProcessor.Sum32())
+	expectedSegments := segmentRepository.UserSegments{
+		NewSegments:    []string{"AVITO_VOICE_MESSAGES"},
+		ActiveSegments: []string{"AVITO_DISCOUNT_50"},
+	}
+	expectedErrorFromRepo := fmt.Errorf("error from repository")
 
-	segmentRepoMock := mocks.NewSegmentRepository(t)
-	segmentRepoMock.EXPECT().
-		GetUserActiveSegments(context.Background(), sentUserID).
-		Return(nil, expectedErrorFromRepository)
+	tt := []struct {
+		name string
 
-	service := New(mocks.NewLogRepository(t), segmentRepoMock)
+		sentUserID   int64
+		sentUserHash int64
 
-	_, err := service.GetUserActiveSegments(context.Background(), sentUserID)
+		buildSegmentRepoMock func(mock *mocks.SegmentRepository)
+		buildLogRepoMock     func(mock *mocks.LogRepository)
 
-	assert.ErrorIs(t, err, expectedErrorFromRepository)
+		expectedSegments segmentRepository.UserSegments
+		expectedError    error
+	}{
+		{
+			name: "unexpected_error_from_transaction",
+
+			sentUserID:   sentUserID,
+			sentUserHash: sentUserHash,
+
+			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.NoError(t, f(ctx))
+					}).Return(expectedErrorFromRepo)
+
+				repo.EXPECT().GetUserActiveSegments(context.Background(), sentUserID, sentUserHash).
+					Return(segmentRepository.UserSegments{}, nil)
+			},
+
+			expectedSegments: segmentRepository.UserSegments{},
+			expectedError:    expectedErrorFromRepo,
+		},
+		{
+			name: "unexpected_error_from_get",
+
+			sentUserID:   sentUserID,
+			sentUserHash: sentUserHash,
+
+			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
+					}).Return(expectedErrorFromRepo)
+
+				repo.EXPECT().GetUserActiveSegments(context.Background(), sentUserID, sentUserHash).
+					Return(segmentRepository.UserSegments{}, expectedErrorFromRepo)
+			},
+
+			expectedSegments: segmentRepository.UserSegments{},
+			expectedError:    expectedErrorFromRepo,
+		},
+		{
+			name: "unexpected_error_from_add",
+
+			sentUserID:   sentUserID,
+			sentUserHash: sentUserHash,
+
+			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
+					}).Return(expectedErrorFromRepo)
+
+				repo.EXPECT().GetUserActiveSegments(context.Background(), sentUserID, sentUserHash).
+					Return(expectedSegments, nil)
+
+				repo.EXPECT().AddUserToSegment(
+					context.Background(),
+					sentUserID,
+					expectedSegments.NewSegments,
+					(*time.Duration)(nil)).
+					Return(expectedErrorFromRepo)
+			},
+
+			buildLogRepoMock: func(repo *mocks.LogRepository) {
+				repo.EXPECT().
+					Add(context.Background(), sentUserID, expectedSegments.NewSegments, logRepository.OperationTypeAdd).
+					Return(expectedErrorFromRepo)
+			},
+
+			expectedSegments: segmentRepository.UserSegments{},
+			expectedError:    expectedErrorFromRepo,
+		},
+	}
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			segmentRepoMock := mocks.NewSegmentRepository(t)
+
+			if tc.buildSegmentRepoMock != nil {
+				tc.buildSegmentRepoMock(segmentRepoMock)
+			}
+
+			service := New(mocks.NewLogRepository(t), segmentRepoMock)
+
+			currentSegments, err := service.GetUserActiveSegments(context.Background(), tc.sentUserID)
+
+			expectedActiveSegments := append(tc.expectedSegments.ActiveSegments, tc.expectedSegments.NewSegments...)
+
+			assert.ErrorIs(t, err, tc.expectedError)
+			assert.Equal(t, currentSegments, expectedActiveSegments)
+		})
+	}
 }
 
 func TestService_AddSegment_Success(t *testing.T) {
@@ -94,7 +216,8 @@ func TestService_AddSegment_Error(t *testing.T) {
 			sentPercent: &sentPercent,
 
 			buildMockSegmentRepo: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().AddSegment(context.Background(), "AVITO", &sentPercent).Return(segmentRepository.ErrSegmentAlreadyExists)
+				repo.EXPECT().AddSegment(context.Background(), "AVITO", &sentPercent).
+					Return(segmentRepository.ErrSegmentAlreadyExists)
 			},
 
 			expectedError: ErrSegmentAlreadyExists,
@@ -191,16 +314,18 @@ func TestService_AddUserToSegment_Success(t *testing.T) {
 	sentTTLToDuration := time.Duration(2) * time.Hour
 
 	segmentRepoMock := mocks.NewSegmentRepository(t)
-	segmentRepoMock.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-		assert.NoError(t, f(ctx))
-	}).Return(nil)
+	segmentRepoMock.EXPECT().InTransaction(context.Background(), mock.Anything).
+		Run(func(ctx context.Context, f func(context.Context) error) {
+			assert.NoError(t, f(ctx))
+		}).Return(nil)
 
 	segmentRepoMock.EXPECT().
 		AddUserToSegment(context.Background(), sentUserID, sentSlugs, &sentTTLToDuration).
 		Return(nil)
 
 	logRepoMock := mocks.NewLogRepository(t)
-	logRepoMock.EXPECT().Add(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeAdd).Return(nil)
+	logRepoMock.EXPECT().
+		Add(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeAdd).Return(nil)
 
 	service := New(logRepoMock, segmentRepoMock)
 
@@ -234,9 +359,10 @@ func TestService_AddUserToSegment_Error(t *testing.T) {
 			sentTTL:    &positiveTTL,
 
 			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-					assert.NoError(t, f(ctx))
-				}).Return(expectedErrorFromRepo)
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.NoError(t, f(ctx))
+					}).Return(expectedErrorFromRepo)
 
 				repo.EXPECT().AddUserToSegment(context.Background(), int64(2), []string{"AVITO"}, &positiveTTLDuration).
 					Return(nil)
@@ -256,9 +382,10 @@ func TestService_AddUserToSegment_Error(t *testing.T) {
 			sentTTL:    &positiveTTL,
 
 			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-					assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
-				}).Return(expectedErrorFromRepo)
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
+					}).Return(expectedErrorFromRepo)
 
 				repo.EXPECT().AddUserToSegment(context.Background(), int64(2), []string{"AVITO"}, &positiveTTLDuration).
 					Return(expectedErrorFromRepo)
@@ -275,9 +402,10 @@ func TestService_AddUserToSegment_Error(t *testing.T) {
 			sentTTL:    &positiveTTL,
 
 			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-					assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
-				}).Return(expectedErrorFromRepo)
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
+					}).Return(expectedErrorFromRepo)
 
 				repo.EXPECT().AddUserToSegment(context.Background(), int64(2), []string{"AVITO"}, &positiveTTLDuration).
 					Return(nil)
@@ -321,16 +449,18 @@ func TestService_DeleteUserFromSegments_Success(t *testing.T) {
 	sentSlugs := []string{"AVITO"}
 
 	segmentRepoMock := mocks.NewSegmentRepository(t)
-	segmentRepoMock.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-		assert.NoError(t, f(ctx))
-	}).Return(nil)
+	segmentRepoMock.EXPECT().InTransaction(context.Background(), mock.Anything).
+		Run(func(ctx context.Context, f func(context.Context) error) {
+			assert.NoError(t, f(ctx))
+		}).Return(nil)
 
 	segmentRepoMock.EXPECT().
 		DeleteUserFromSegment(context.Background(), sentUserID, sentSlugs).
 		Return(nil)
 
 	logRepoMock := mocks.NewLogRepository(t)
-	logRepoMock.EXPECT().Add(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeDelete).Return(nil)
+	logRepoMock.EXPECT().Add(context.Background(), sentUserID, sentSlugs, logRepository.OperationTypeDelete).
+		Return(nil)
 
 	service := New(logRepoMock, segmentRepoMock)
 
@@ -360,9 +490,10 @@ func TestService_DeleteUserFromSegments_Error(t *testing.T) {
 			sentSlugs:  []string{"AVITO"},
 
 			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-					assert.NoError(t, f(ctx))
-				}).Return(expectedErrorFromRepo)
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.NoError(t, f(ctx))
+					}).Return(expectedErrorFromRepo)
 
 				repo.EXPECT().DeleteUserFromSegment(context.Background(), int64(2), []string{"AVITO"}).
 					Return(nil)
@@ -381,9 +512,10 @@ func TestService_DeleteUserFromSegments_Error(t *testing.T) {
 			sentSlugs:  []string{"AVITO"},
 
 			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-					assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
-				}).Return(expectedErrorFromRepo)
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
+					}).Return(expectedErrorFromRepo)
 
 				repo.EXPECT().DeleteUserFromSegment(context.Background(), int64(2), []string{"AVITO"}).
 					Return(expectedErrorFromRepo)
@@ -399,9 +531,10 @@ func TestService_DeleteUserFromSegments_Error(t *testing.T) {
 			sentSlugs:  []string{"AVITO"},
 
 			buildSegmentRepoMock: func(repo *mocks.SegmentRepository) {
-				repo.EXPECT().InTransaction(context.Background(), mock.Anything).Run(func(ctx context.Context, f func(context.Context) error) {
-					assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
-				}).Return(expectedErrorFromRepo)
+				repo.EXPECT().InTransaction(context.Background(), mock.Anything).
+					Run(func(ctx context.Context, f func(context.Context) error) {
+						assert.ErrorIs(t, f(ctx), expectedErrorFromRepo)
+					}).Return(expectedErrorFromRepo)
 
 				repo.EXPECT().DeleteUserFromSegment(context.Background(), int64(2), []string{"AVITO"}).
 					Return(nil)

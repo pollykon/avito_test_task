@@ -4,6 +4,8 @@ package segment
 import (
 	"context"
 	"time"
+
+	segmentRepo "github.com/pollykon/avito_test_task/internal/repository/segment"
 )
 
 type SegmentRepository interface {
@@ -11,7 +13,7 @@ type SegmentRepository interface {
 	DeleteSegment(ctx context.Context, slug string) error
 	AddUserToSegment(ctx context.Context, userID int64, slugs []string, ttl *time.Duration) error
 	DeleteUserFromSegment(ctx context.Context, userID int64, slugs []string) error
-	GetUserActiveSegments(ctx context.Context, userID int64) ([]string, error)
+	GetUserActiveSegments(ctx context.Context, userID int64, userHash int64) (segmentRepo.UserSegments, error)
 	InTransaction(ctx context.Context, f func(ctx context.Context) error) error
 }
 

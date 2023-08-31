@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/caarlos0/env/v7"
+	"time"
 )
 
 type Config struct {
@@ -24,9 +25,9 @@ type CSVConfig struct {
 }
 
 type CronTimeIntervalConfig struct {
-	DeleteSegments    int `env:"TIME_INTERVAL_DELETE_SEGMENTS,required"`
-	DeleteTTLSegments int `env:"TIME_INTERVAL_DELETE_TTL_SEGMENTS,required"`
-	DeleteLogs        int `env:"TIME_INTERVAL_DELETE_LOGS,required"`
+	DeleteSegments    time.Duration `env:"TIME_INTERVAL_DELETE_SEGMENTS,required"`
+	DeleteTTLSegments time.Duration `env:"TIME_INTERVAL_DELETE_TTL_SEGMENTS,required"`
+	DeleteLogs        time.Duration `env:"TIME_INTERVAL_DELETE_LOGS,required"`
 }
 
 type DeleteBatchSizeConfig struct {

@@ -17,6 +17,7 @@ import (
 	"github.com/pollykon/avito_test_task/internal/handlers"
 	"github.com/pollykon/avito_test_task/internal/handlers/add_user_to_segments/mocks"
 	"github.com/pollykon/avito_test_task/internal/logger"
+	segmentService "github.com/pollykon/avito_test_task/internal/service/segment"
 )
 
 func TestSegmentHandler_AddUserToSegmentSegment_Success(t *testing.T) {
@@ -152,7 +153,30 @@ func TestSegmentHandler_AddUserToSegment_Error(t *testing.T) {
 			},
 		},
 		{
-			name: "service_error_segment_already_exists",
+			name: "error_user_already_in_segment",
+
+			requestMethod: http.MethodPost,
+			sentSlugs:     []string{"AVITO_TEST1", "AVITO_TEST2"},
+			sentUserID:    2,
+			sentTTL:       &positiveTTL,
+
+			buildSegmentServiceMock: func(service *mocks.SegmentService) {
+				service.EXPECT().AddUserToSegment(
+					context.Background(), int64(2), []string{"AVITO_TEST1", "AVITO_TEST2"}, &positiveTTLDuration,
+				).
+					Return(segmentService.ErrUserAlreadyInSegment)
+			},
+
+			expectedStatusCode: http.StatusBadRequest,
+			expectedResponse: &HandlerResponse{
+				Status: http.StatusBadRequest,
+				Error: &HandlerResponseError{
+					Message: handlers.ErrMsgBadRequest,
+				},
+			},
+		},
+		{
+			name: "unexpected_error_from_service",
 
 			requestMethod: http.MethodPost,
 			sentSlugs:     []string{"AVITO_TEST1", "AVITO_TEST2"},

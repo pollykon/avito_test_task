@@ -3,10 +3,13 @@ package add_user_to_segments
 import (
 	"context"
 	"encoding/json"
-	"github.com/pollykon/avito_test_task/internal/handlers"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/pollykon/avito_test_task/internal/handlers"
+	segmentService "github.com/pollykon/avito_test_task/internal/service/segment"
 )
 
 type Handler struct {
@@ -88,6 +91,14 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResp
 	}
 	err := h.segmentService.AddUserToSegment(context.Background(), request.UserID, request.SegmentSlugs, ttlDuration)
 	if err != nil {
+		if errors.Is(err, segmentService.ErrUserAlreadyInSegment) {
+			return HandlerResponse{
+				Status: http.StatusBadRequest,
+				Error: &HandlerResponseError{
+					Message: handlers.ErrMsgBadRequest,
+				},
+			}
+		}
 		h.logger.ErrorContext(ctx, "error while adding user to segment", "error", err, "request", request)
 		return HandlerResponse{
 			Status: http.StatusInternalServerError,

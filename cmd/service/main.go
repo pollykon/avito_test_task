@@ -97,7 +97,7 @@ func main() {
 	mux.Handle("/add_segment_v1", segmentAddHandler)
 	mux.Handle("/delete_segment_v1", segmentDeleteHandler)
 	mux.Handle("/add_user_to_segments_v1", segmentAddUserToSegment)
-	mux.Handle("/delete_user_from_segment_v1", segmentDeleteUserFromSegment)
+	mux.Handle("/delete_user_from_segments_v1", segmentDeleteUserFromSegment)
 	mux.Handle("/get_user_active_segments_v1", segmentGetUserActiveSegments)
 	mux.Handle("/get_user_logs_v1", logGetLogsHandler)
 

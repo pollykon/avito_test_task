@@ -42,7 +42,7 @@ func (l *Repository) Add(ctx context.Context, userID int64, segments []string, o
 }
 
 func (l *Repository) Delete(ctx context.Context, limit int64) error {
-	query := `delete from log where id in (select id from log where insert_time + interval '3 months' > now() limit $1)`
+	query := `delete from log where id in (select id from log where insert_time + interval '3 months' < now() limit $1)`
 	_, err := l.db.ExecContext(ctx, query, limit)
 	if err != nil {
 		return fmt.Errorf("error while deleting from log: %w", err)

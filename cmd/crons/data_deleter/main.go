@@ -66,7 +66,7 @@ func main() {
 	s := gocron.NewScheduler(time.UTC)
 
 	//cron which deletes segments with flag 'deleted' = true
-	_, err = s.Every(config.CronTimeInterval.DeleteSegments).Minute().Do(func() {
+	_, err = s.Every(config.CronTimeInterval.DeleteSegments).Do(func() {
 		logger.InfoContext(ctx, "starting to delete segments")
 		err = cron.DeleteSegments(ctx, config.BatchSize.Segments)
 		if err != nil {
@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// cron which deletes segments with expired ttl
-	_, err = s.Every(config.CronTimeInterval.DeleteTTLSegments).Minute().Do(func() {
+	_, err = s.Every(config.CronTimeInterval.DeleteTTLSegments).Do(func() {
 		logger.InfoContext(ctx, "starting to delete segments with ttl")
 		err = cron.DeleteTTLSegments(ctx, config.BatchSize.TTLSegments)
 		if err != nil {
@@ -92,9 +92,8 @@ func main() {
 		logger.ErrorContext(ctx, "error while running cron which deletes segments from user segments", "error", err)
 		return
 	}
-
 	// cron which deletes old logs (3 month)
-	_, err = s.Every(config.CronTimeInterval.DeleteLogs).Minute().Do(func() {
+	_, err = s.Every(config.CronTimeInterval.DeleteLogs).Do(func() {
 		logger.InfoContext(ctx, "starting to delete logs")
 		err = cron.DeleteLogs(ctx, config.BatchSize.Logs)
 		if err != nil {

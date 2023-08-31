@@ -10,7 +10,7 @@ services:
     ports:
       - "${PG_PORT}:5432"
     volumes:
-      - database-volume:/var/lib/postgresql/data
+      - ./migration.sql:/docker-entrypoint-initdb.d/migration.sql
   microservice:
     build: ./
     stop_signal: SIGINT
@@ -18,7 +18,7 @@ services:
       - postgres
     ports:
       - "1101:1101"
-    command: ./service
+    command: ./service && mkdir ${LOGS_CSV_DIRECTORY}
     environment:
       PG_USER: ${PG_USER}
       PG_PASSWORD: ${PG_PASSWORD}

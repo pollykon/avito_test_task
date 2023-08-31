@@ -20,6 +20,7 @@ create table user_segment(
      id bigserial primary key,
      user_id bigint references "user"(id),
      segment_id text references segment(id),
+     unique (user_id, segment_id),
      insert_time timestamp with time zone default now() not null,
      ttl interval
 );

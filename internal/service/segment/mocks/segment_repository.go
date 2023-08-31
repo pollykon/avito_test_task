@@ -5,6 +5,7 @@ package mocks
 import (
 	context "context"
 
+	repositorysegment "github.com/pollykon/avito_test_task/internal/repository/segment"
 	mock "github.com/stretchr/testify/mock"
 
 	time "time"
@@ -199,25 +200,23 @@ func (_c *SegmentRepository_DeleteUserFromSegment_Call) RunAndReturn(run func(co
 	return _c
 }
 
-// GetUserActiveSegments provides a mock function with given fields: ctx, userID
-func (_m *SegmentRepository) GetUserActiveSegments(ctx context.Context, userID int64) ([]string, error) {
-	ret := _m.Called(ctx, userID)
+// GetUserActiveSegments provides a mock function with given fields: ctx, userID, userHash
+func (_m *SegmentRepository) GetUserActiveSegments(ctx context.Context, userID int64, userHash int64) (repositorysegment.UserSegments, error) {
+	ret := _m.Called(ctx, userID, userHash)
 
-	var r0 []string
+	var r0 repositorysegment.UserSegments
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64) ([]string, error)); ok {
-		return rf(ctx, userID)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) (repositorysegment.UserSegments, error)); ok {
+		return rf(ctx, userID, userHash)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64) []string); ok {
-		r0 = rf(ctx, userID)
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) repositorysegment.UserSegments); ok {
+		r0 = rf(ctx, userID, userHash)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
-		}
+		r0 = ret.Get(0).(repositorysegment.UserSegments)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, int64) error); ok {
-		r1 = rf(ctx, userID)
+	if rf, ok := ret.Get(1).(func(context.Context, int64, int64) error); ok {
+		r1 = rf(ctx, userID, userHash)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -233,23 +232,24 @@ type SegmentRepository_GetUserActiveSegments_Call struct {
 // GetUserActiveSegments is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID int64
-func (_e *SegmentRepository_Expecter) GetUserActiveSegments(ctx interface{}, userID interface{}) *SegmentRepository_GetUserActiveSegments_Call {
-	return &SegmentRepository_GetUserActiveSegments_Call{Call: _e.mock.On("GetUserActiveSegments", ctx, userID)}
+//   - userHash int64
+func (_e *SegmentRepository_Expecter) GetUserActiveSegments(ctx interface{}, userID interface{}, userHash interface{}) *SegmentRepository_GetUserActiveSegments_Call {
+	return &SegmentRepository_GetUserActiveSegments_Call{Call: _e.mock.On("GetUserActiveSegments", ctx, userID, userHash)}
 }
 
-func (_c *SegmentRepository_GetUserActiveSegments_Call) Run(run func(ctx context.Context, userID int64)) *SegmentRepository_GetUserActiveSegments_Call {
+func (_c *SegmentRepository_GetUserActiveSegments_Call) Run(run func(ctx context.Context, userID int64, userHash int64)) *SegmentRepository_GetUserActiveSegments_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(int64))
+		run(args[0].(context.Context), args[1].(int64), args[2].(int64))
 	})
 	return _c
 }
 
-func (_c *SegmentRepository_GetUserActiveSegments_Call) Return(_a0 []string, _a1 error) *SegmentRepository_GetUserActiveSegments_Call {
+func (_c *SegmentRepository_GetUserActiveSegments_Call) Return(_a0 repositorysegment.UserSegments, _a1 error) *SegmentRepository_GetUserActiveSegments_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *SegmentRepository_GetUserActiveSegments_Call) RunAndReturn(run func(context.Context, int64) ([]string, error)) *SegmentRepository_GetUserActiveSegments_Call {
+func (_c *SegmentRepository_GetUserActiveSegments_Call) RunAndReturn(run func(context.Context, int64, int64) (repositorysegment.UserSegments, error)) *SegmentRepository_GetUserActiveSegments_Call {
 	_c.Call.Return(run)
 	return _c
 }
