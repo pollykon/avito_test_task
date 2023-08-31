@@ -48,8 +48,8 @@ BATCH_SIZE_LOGS = <размер_удаляемой_пачки_логов>
 
 3. Для развертывания dev-среды:
     + Запустить контейнер с базой данных
-   ```text
-    docker-compose up
+   ```
+    docker-compose -f docker-compose.dev.yml up --build 
     ```
    + Запустить сервер и кроны
    ```
