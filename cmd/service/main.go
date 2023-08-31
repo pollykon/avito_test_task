@@ -66,11 +66,6 @@ func main() {
 
 	defer func() { _ = db.Close() }()
 
-	if err = db.Ping(); err != nil {
-		logger.ErrorContext(context.Background(), "database doesn't response", "error", err)
-		return
-	}
-
 	database := storage.New(db)
 
 	segmentRepo := segmentRepository.New(database)

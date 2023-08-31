@@ -121,7 +121,7 @@ func TestSegmentHandler_AddSegment_Error(t *testing.T) {
 			expectedResponse: &HandlerResponse{
 				Status: http.StatusBadRequest,
 				Error: &HandlerResponseError{
-					Message: "segment already exists",
+					Message: handlers.ErrMsgBadRequest,
 				},
 			},
 		},

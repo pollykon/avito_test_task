@@ -77,7 +77,7 @@ func (h Handler) handle(ctx context.Context, request HandlerRequest) HandlerResp
 			return HandlerResponse{
 				Status: http.StatusBadRequest,
 				Error: &HandlerResponseError{
-					Message: "segment already exists",
+					Message: handlers.ErrMsgBadRequest,
 				},
 			}
 		}
