@@ -17,7 +17,7 @@ services:
     depends_on:
       - postgres
     ports:
-      - "1101:1101"
+      - "${MICROSERVICE_PORT}:${MICROSERVICE_PORT}"
     command: ./service && mkdir ${LOGS_CSV_DIRECTORY}
     environment:
       PG_USER: ${PG_USER}
@@ -25,6 +25,8 @@ services:
       PG_DATABASE_NAME: ${PG_DATABASE_NAME}
       PG_HOST: postgres
       PG_PORT: ${PG_PORT}
+
+      MICROSERVICE_PORT: ${MICROSERVICE_PORT}
 
       LOGS_CSV_DIRECTORY: ${LOGS_CSV_DIRECTORY}
 

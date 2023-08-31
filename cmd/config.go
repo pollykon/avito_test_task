@@ -7,6 +7,7 @@ import (
 
 type Config struct {
 	Database         DatabaseConfig
+	Microservice     MicroserviceConfig
 	CronTimeInterval CronTimeIntervalConfig
 	BatchSize        DeleteBatchSizeConfig
 	CSV              CSVConfig
@@ -18,6 +19,10 @@ type DatabaseConfig struct {
 	User     string `env:"PG_USER,required"`
 	Password string `env:"PG_PASSWORD,required"`
 	Name     string `env:"PG_DATABASE_NAME,required"`
+}
+
+type MicroserviceConfig struct {
+	Port string `env:"MICROSERVICE_PORT,required"`
 }
 
 type CSVConfig struct {

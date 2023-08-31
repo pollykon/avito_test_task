@@ -46,14 +46,14 @@ func TestLogHandler_GetLogs_Success(t *testing.T) {
 	})
 	request, err := http.NewRequest(
 		http.MethodPost,
-		"http://localhost:1101/get_user_logs",
+		"http://localhost:1011/get_user_logs",
 		strings.NewReader(string(jsonBodyRequest)),
 	)
 	if err != nil {
 		t.Fatalf("error while sending request: %s", err)
 	}
 
-	expectedURI := "http://localhost:1101/static/ef8cde3a-89a1-4fd5-81e2-34dac98a4740.csv"
+	expectedURI := "http://localhost:1011/static/ef8cde3a-89a1-4fd5-81e2-34dac98a4740.csv"
 
 	w := httptest.NewRecorder()
 	logServiceMock := mocks.NewLogService(t)
@@ -207,7 +207,7 @@ func TestLogHandler_GetLogs_Error(t *testing.T) {
 			})
 			request, err := http.NewRequest(
 				tc.sentMethod,
-				"http://localhost:1101/get_user_logs",
+				"http://localhost:1011/get_user_logs",
 				strings.NewReader(string(jsonBodyRequest)))
 			if err != nil {
 				t.Fatalf("error while sending request: %s", err)

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -30,7 +31,6 @@ import (
 )
 
 const (
-	servicePort     = "1101"
 	staticURIPrefix = "/static"
 )
 
@@ -100,12 +100,12 @@ func main() {
 	mux.Handle(staticURIPrefix+"/", staticHandler)
 
 	server := http.Server{
-		Addr:    ":" + servicePort,
+		Addr:    ":" + config.Microservice.Port,
 		Handler: mux,
 	}
 
 	go func() {
-		logger.InfoContext(context.Background(), "service started", "port", servicePort)
+		logger.InfoContext(context.Background(), "service started", "port", config.Microservice.Port)
 		if err = server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.ErrorContext(context.Background(), "error while starting server", "error", err)
 		}
@@ -113,7 +113,7 @@ func main() {
 
 	// graceful shutdown
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	<-quit
 	logger.InfoContext(context.Background(), "shutting down server...")
 
